@@ -1,0 +1,19 @@
+{
+  "id": "home_assistant",
+  "title": "Home Assistant",
+  "description": "Control basic Home Assistant entities and read their state.",
+  "version": "1.1.0",
+  "domain": "home",
+  "domains": [
+    "home"
+  ],
+  "platforms": [
+    "mac",
+    "pi_cpu",
+    "pi_hailo"
+  ],
+  "account_mode": "multiple",
+  "download_url": "skills/home_assistant/home_assistant.zip",
+  "logo_url": "skills/home_assistant/logo.svg",
+  "meta_url": "skills/home_assistant/meta.json"
+}

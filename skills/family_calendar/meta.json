@@ -1,0 +1,19 @@
+{
+  "id": "family_calendar",
+  "title": "Family Calendar",
+  "description": "Store and read shared household events in a local family calendar.",
+  "version": "1.0.0",
+  "domain": "calendar",
+  "domains": [
+    "calendar"
+  ],
+  "platforms": [
+    "mac",
+    "pi_cpu",
+    "pi_hailo"
+  ],
+  "account_mode": "none",
+  "download_url": "skills/family_calendar/family_calendar.zip",
+  "logo_url": "skills/family_calendar/logo.svg",
+  "meta_url": "skills/family_calendar/meta.json"
+}

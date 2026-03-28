@@ -1,0 +1,19 @@
+{
+  "id": "shopping_list",
+  "title": "Shopping List",
+  "description": "Manage a shared local household shopping list.",
+  "version": "1.0.0",
+  "domain": "shopping",
+  "domains": [
+    "shopping"
+  ],
+  "platforms": [
+    "mac",
+    "pi_cpu",
+    "pi_hailo"
+  ],
+  "account_mode": "none",
+  "download_url": "skills/shopping_list/shopping_list.zip",
+  "logo_url": "skills/shopping_list/logo.svg",
+  "meta_url": "skills/shopping_list/meta.json"
+}

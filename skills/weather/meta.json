@@ -1,0 +1,19 @@
+{
+  "id": "weather",
+  "title": "Weather",
+  "description": "Return current weather summaries for a location.",
+  "version": "1.0.0",
+  "domain": "weather",
+  "domains": [
+    "weather"
+  ],
+  "platforms": [
+    "mac",
+    "pi_cpu",
+    "pi_hailo"
+  ],
+  "account_mode": "none",
+  "download_url": "skills/weather/weather.zip",
+  "logo_url": "skills/weather/logo.svg",
+  "meta_url": "skills/weather/meta.json"
+}

@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "id": "home_assistant",
+  "title": "Home Assistant",
+  "domain": "home",
+  "description": "Control basic Home Assistant entities and read their state.",
+  "logo_path": "logo-home-assistant.svg",
+  "version": "1.1.0",
+  "load_type": "lazy",
+  "account_mode": "multiple",
+  "system": false,
+  "enabled_by_default": false,
+  "required_context": [],
+  "optional_context": [],
+  "permissions": {
+    "default": "all_users"
+  },
+  "shared_context_fields": [],
+  "account_context_fields": [
+    {
+      "key": "base_url",
+      "label": "Home Assistant URL",
+      "type": "text",
+      "placeholder": "http://homeassistant.local:8123",
+      "help_text": "Local Home Assistant base URL for this instance.",
+      "required": false,
+      "default_value": ""
+    },
+    {
+      "key": "access_token",
+      "label": "Long-lived access token",
+      "type": "textarea",
+      "placeholder": "Paste a Home Assistant long-lived token",
+      "help_text": "Used for authenticated local API access.",
+      "required": false,
+      "default_value": ""
+    },
+    {
+      "key": "default_area",
+      "label": "Default area",
+      "type": "text",
+      "placeholder": "living room",
+      "help_text": "Optional room name to bias entity matching for this instance.",
+      "required": false,
+      "default_value": ""
+    },
+    {
+      "key": "site_aliases",
+      "label": "Site aliases",
+      "type": "text",
+      "placeholder": "house, office",
+      "help_text": "Comma-separated words that should map requests like 'at work' or 'at home' to this instance.",
+      "required": false,
+      "default_value": ""
+    }
+  ],
+  "runtime_dependencies": [],
+  "skill_dependencies": {
+    "required": [],
+    "optional": []
+  },
+  "actions": {
+    "turn_on": {
+      "title": "Turn On",
+      "description": "Turn on a matched Home Assistant entity.",
+      "enabled": true,
+      "required_context": [],
+      "optional_context": [],
+      "timeout_ms": 6000,
+      "cache_ttl_sec": 0,
+      "phrases": ["turn on", "switch on"],
+      "keywords": ["turn", "on", "light", "lamp", "fan", "switch", "scene", "outlet", "plug"],
+      "negative_keywords": ["movie", "calendar", "shopping", "reminder"],
+      "example_utterances": ["turn on the kitchen lights"],
+      "required_entities": [],
+      "optional_entities": []
+    },
+    "turn_off": {
+      "title": "Turn Off",
+      "description": "Turn off a matched Home Assistant entity.",
+      "enabled": true,
+      "required_context": [],
+      "optional_context": [],
+      "timeout_ms": 6000,
+      "cache_ttl_sec": 0,
+      "phrases": ["turn off", "switch off"],
+      "keywords": ["turn", "off", "light", "lamp", "fan", "switch", "scene", "outlet", "plug"],
+      "negative_keywords": ["movie", "calendar", "shopping", "reminder"],
+      "example_utterances": ["turn off the porch light"],
+      "required_entities": [],
+      "optional_entities": []
+    },
+    "get_state": {
+      "title": "Get State",
+      "description": "Read the current state of a matched entity.",
+      "enabled": true,
+      "required_context": [],
+      "optional_context": [],
+      "timeout_ms": 6000,
+      "cache_ttl_sec": 10,
+      "phrases": ["is the", "what is the status of", "are the"],
+      "keywords": ["status", "state", "on", "off", "light", "fan", "switch", "door", "window"],
+      "negative_keywords": ["movie", "calendar", "shopping", "reminder"],
+      "example_utterances": ["are the kitchen lights on"],
+      "required_entities": [],
+      "optional_entities": []
+    },
+    "set_level": {
+      "title": "Set Level",
+      "description": "Set a fan speed percentage or light brightness percentage.",
+      "enabled": true,
+      "required_context": [],
+      "optional_context": [],
+      "timeout_ms": 6000,
+      "cache_ttl_sec": 0,
+      "phrases": ["set "],
+      "keywords": ["set", "fan", "light", "brightness", "speed", "percent", "%"],
+      "negative_keywords": ["movie", "calendar", "shopping", "reminder"],
+      "example_utterances": ["set the living room fan to 50%"],
+      "required_entities": [],
+      "optional_entities": []
+    }
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "id": "movies",
+  "title": "Movies",
+  "domain": "movies",
+  "description": "Look up movie details, post-credit info, and local showtime summaries.",
+  "logo_path": "logo-movies.svg",
+  "version": "1.0.0",
+  "load_type": "lazy",
+  "account_mode": "none",
+  "system": false,
+  "enabled_by_default": true,
+  "required_context": [],
+  "optional_context": ["location", "theater_name"],
+  "permissions": {
+    "default": "all_users"
+  },
+  "shared_context_fields": [
+    {
+      "key": "location",
+      "label": "Default movie location",
+      "type": "text",
+      "placeholder": "Milford, CT",
+      "help_text": "Used when a showtimes request does not mention a city.",
+      "required": false,
+      "default_value": ""
+    },
+    {
+      "key": "theater_name",
+      "label": "Preferred theater",
+      "type": "text",
+      "placeholder": "Cinemark Milford 16",
+      "help_text": "Optional theater name to bias showtime searches.",
+      "required": false,
+      "default_value": ""
+    }
+  ],
+  "account_context_fields": [],
+  "runtime_dependencies": [],
+  "skill_dependencies": {
+    "required": [
+      {
+        "id": "web_search",
+        "reason": "Movie lookups use the built-in search provider."
+      }
+    ],
+    "optional": []
+  },
+  "actions": {
+    "get_showtimes": {
+      "title": "Get Showtimes",
+      "description": "Return local movie showtime summaries.",
+      "enabled": true,
+      "required_context": [],
+      "optional_context": ["location", "theater_name"],
+      "timeout_ms": 6000,
+      "cache_ttl_sec": 300,
+      "phrases": ["showtimes", "movies playing", "what movies are playing", "what movie are playing", "what's playing", "movie showtimes", "show me the showtimes", "show me the movies showtimes"],
+      "keywords": ["showtimes", "theater", "theatre", "playing", "movie", "movies", "tonight", "today", "tomorrow", "imax", "matinee"],
+      "negative_keywords": ["weather", "calendar", "shopping", "reminder"],
+      "example_utterances": [
+        "what movies are playing tonight",
+        "showtimes near milford ct"
+      ],
+      "required_entities": [],
+      "optional_entities": []
+    },
+    "get_movie_details": {
+      "title": "Get Movie Details",
+      "description": "Return runtime, rating, and post-credit scene details for a movie.",
+      "enabled": true,
+      "required_context": [],
+      "optional_context": [],
+      "timeout_ms": 6000,
+      "cache_ttl_sec": 300,
+      "phrases": ["post credit scene", "post-credit scene", "runtime", "movie rating"],
+      "keywords": ["movie", "runtime", "rating", "rated", "credits", "scene", "cast"],
+      "negative_keywords": ["weather", "calendar", "shopping", "reminder"],
+      "example_utterances": [
+        "does mickey 17 have a post credit scene",
+        "what is the runtime for dune part two"
+      ],
+      "required_entities": [],
+      "optional_entities": []
+    }
+  }
+}

@@ -6,7 +6,7 @@ Store and read personal reminders locally for each signed-in user.
 
 ## Install
 
-- Open LokiDoki and browse the skills catalog
+- Open [LokiDoki](https://github.com/JesseWebDotCom/loki-doki) and browse the skills catalog
 - Direct package: [`reminders.zip`](./reminders.zip)
 
 ## Metadata

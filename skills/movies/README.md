@@ -6,7 +6,7 @@ Look up movie details, post-credit info, and local showtime summaries.
 
 ## Install
 
-- Open LokiDoki and browse the skills catalog
+- Open [LokiDoki](https://github.com/JesseWebDotCom/loki-doki) and browse the skills catalog
 - Direct package: [`movies.zip`](./movies.zip)
 
 ## Metadata

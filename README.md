@@ -1,8 +1,8 @@
 # LokiDoki Skills
 
-Skills for LokiDoki, the local AI platform for the home.
+Skills for [LokiDoki](https://github.com/JesseWebDotCom/loki-doki), the local AI platform for the home.
 
-This repo is the official installable skills catalog for LokiDoki.
+This repo is the official installable skills catalog for [LokiDoki](https://github.com/JesseWebDotCom/loki-doki).
 
 ## Browse Skills
 
@@ -14,8 +14,8 @@ This repo is the official installable skills catalog for LokiDoki.
 
 - local tools and workflows
 - household utilities and integrations
-- focused capabilities LokiDoki can browse and install
-- required icons for the LokiDoki skill browser
+- focused capabilities [LokiDoki](https://github.com/JesseWebDotCom/loki-doki) can browse and install
+- required icons for the [LokiDoki](https://github.com/JesseWebDotCom/loki-doki) skill browser
 
 ## Maintainer Note
 

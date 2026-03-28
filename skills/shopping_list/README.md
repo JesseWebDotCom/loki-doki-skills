@@ -6,7 +6,7 @@ Manage a shared local household shopping list.
 
 ## Install
 
-- Open LokiDoki and browse the skills catalog
+- Open [LokiDoki](https://github.com/JesseWebDotCom/loki-doki) and browse the skills catalog
 - Direct package: [`shopping_list.zip`](./shopping_list.zip)
 
 ## Metadata

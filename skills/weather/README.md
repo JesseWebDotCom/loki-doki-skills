@@ -6,7 +6,7 @@ Return current weather summaries for a location.
 
 ## Install
 
-- Open LokiDoki and browse the skills catalog
+- Open [LokiDoki](https://github.com/JesseWebDotCom/loki-doki) and browse the skills catalog
 - Direct package: [`weather.zip`](./weather.zip)
 
 ## Metadata

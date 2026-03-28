@@ -13,6 +13,7 @@ INDEX_PATH = ROOT_DIR / "index.json"
 README_PATH = ROOT_DIR / "README.md"
 REPO_URL = "https://github.com/JesseWebDotCom/loki-doki-skills"
 SOURCE_REPO_URL = "https://github.com/JesseWebDotCom/loki-doki"
+SOURCE_REPO_LINK = f"[LokiDoki]({SOURCE_REPO_URL})"
 
 
 def canonical_logo(source_dir: Path) -> Path:
@@ -73,7 +74,7 @@ def write_skill_files(source_dir: Path, manifest: dict[str, object]) -> dict[str
         "",
         "## Install",
         "",
-        "- Open LokiDoki and browse the skills catalog",
+        f"- Open {SOURCE_REPO_LINK} and browse the skills catalog",
         f"- Direct package: [`{skill_id}.zip`](./{skill_id}.zip)",
         "",
         "## Metadata",
@@ -101,9 +102,9 @@ def build_root_readme(entries: list[dict[str, object]]) -> str:
     return "\n".join([
         "# LokiDoki Skills",
         "",
-        "Skills for LokiDoki, the local AI platform for the home.",
+        f"Skills for {SOURCE_REPO_LINK}, the local AI platform for the home.",
         "",
-        "This repo is the official installable skills catalog for LokiDoki.",
+        f"This repo is the official installable skills catalog for {SOURCE_REPO_LINK}.",
         "",
         "## Browse Skills",
         "",
@@ -113,8 +114,8 @@ def build_root_readme(entries: list[dict[str, object]]) -> str:
         "",
         "- local tools and workflows",
         "- household utilities and integrations",
-        "- focused capabilities LokiDoki can browse and install",
-        "- required icons for the LokiDoki skill browser",
+        f"- focused capabilities {SOURCE_REPO_LINK} can browse and install",
+        f"- required icons for the {SOURCE_REPO_LINK} skill browser",
         "",
         "## Maintainer Note",
         "",

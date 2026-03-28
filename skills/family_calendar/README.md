@@ -6,7 +6,7 @@ Store and read shared household events in a local family calendar.
 
 ## Install
 
-- Open LokiDoki and browse the skills catalog
+- Open [LokiDoki](https://github.com/JesseWebDotCom/loki-doki) and browse the skills catalog
 - Direct package: [`family_calendar.zip`](./family_calendar.zip)
 
 ## Metadata

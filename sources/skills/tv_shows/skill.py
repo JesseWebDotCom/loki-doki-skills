@@ -39,10 +39,39 @@ def _show_details_result(request_text: str) -> dict[str, Any]:
     show_name = _show_name_from_request(request_text)
     if not show_name:
         return _error_result("get_show_details", "Tell me which TV show or series you want.")
+    # If the user asks about a finale or ending, try to answer directly
+    finale_keywords = ["finale", "ending", "last episode", "final episode", "series finale", "conclusion"]
+    is_finale_query = any(word in request_text.lower() for word in finale_keywords)
     show = _tvmaze_json(f"/singlesearch/shows?q={urllib.parse.quote(show_name)}&embed=cast")
-    if not show:
+    # Guardrail: Ensure the returned show name matches the query (case-insensitive, substring match)
+    returned_name = str(show.get("name", "")).lower() if show else ""
+    if not show or (show_name.lower() not in returned_name and returned_name not in show_name.lower()):
         return _error_result("get_show_details", f"I couldn't find a TV show named {show_name}.")
     summary = _show_summary(show)
+    # If finale query, try to answer with finale info
+    if is_finale_query:
+        ended = show.get("ended")
+        if ended:
+            finale_reply = f"Yes, the TV show {show.get('name')} had a finale. Its final episode aired on {ended}."
+        else:
+            finale_reply = f"The TV show {show.get('name')} does not have a recorded finale date."
+        return {
+            "ok": True,
+            "skill": "tv_shows",
+            "action": "get_show_details",
+            "data": {
+                "show_name": show.get("name", show_name),
+                "premiered": str(show.get("premiered") or ""),
+                "status": str(show.get("status") or ""),
+                "genres": list(show.get("genres") or []),
+                "network": _network_name(show),
+                "summary": finale_reply,
+                "official_site": str(show.get("officialSite") or ""),
+            },
+            "meta": {"source": "tvmaze"},
+            "presentation": {"type": "tv_show_details"},
+            "errors": [],
+        }
     return {
         "ok": True,
         "skill": "tv_shows",

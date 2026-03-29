@@ -31,3 +31,4 @@ This repo is the official installable skills catalog for [LokiDoki](https://gith
 - Add the exported skill files to this repo in a new branch
 - Commit the generated changes
 - Open a pull request for review
+

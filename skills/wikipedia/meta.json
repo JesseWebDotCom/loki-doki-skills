@@ -1,0 +1,19 @@
+{
+  "id": "wikipedia",
+  "title": "Wikipedia",
+  "description": "Look up Wikipedia articles and return structured summaries.",
+  "version": "1.0.0",
+  "domain": "knowledge",
+  "domains": [
+    "knowledge"
+  ],
+  "platforms": [
+    "mac",
+    "pi_cpu",
+    "pi_hailo"
+  ],
+  "account_mode": "none",
+  "download_url": "skills/wikipedia/wikipedia.zip",
+  "logo_url": "skills/wikipedia/logo.svg",
+  "meta_url": "skills/wikipedia/meta.json"
+}

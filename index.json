@@ -100,6 +100,25 @@
       "meta_url": "skills/shopping_list/meta.json"
     },
     {
+      "id": "tv_shows",
+      "title": "TV Shows",
+      "description": "Look up TV show details, casts, and TV-focused performer credits with TVMaze.",
+      "version": "1.0.0",
+      "domain": "entertainment",
+      "domains": [
+        "entertainment"
+      ],
+      "platforms": [
+        "mac",
+        "pi_cpu",
+        "pi_hailo"
+      ],
+      "account_mode": "none",
+      "download_url": "skills/tv_shows/tv_shows.zip",
+      "logo_url": "skills/tv_shows/logo.svg",
+      "meta_url": "skills/tv_shows/meta.json"
+    },
+    {
       "id": "weather",
       "title": "Weather",
       "description": "Return current weather summaries for a location.",
@@ -117,6 +136,25 @@
       "download_url": "skills/weather/weather.zip",
       "logo_url": "skills/weather/logo.svg",
       "meta_url": "skills/weather/meta.json"
+    },
+    {
+      "id": "wikipedia",
+      "title": "Wikipedia",
+      "description": "Look up Wikipedia articles and return structured summaries.",
+      "version": "1.0.0",
+      "domain": "knowledge",
+      "domains": [
+        "knowledge"
+      ],
+      "platforms": [
+        "mac",
+        "pi_cpu",
+        "pi_hailo"
+      ],
+      "account_mode": "none",
+      "download_url": "skills/wikipedia/wikipedia.zip",
+      "logo_url": "skills/wikipedia/logo.svg",
+      "meta_url": "skills/wikipedia/meta.json"
     }
   ]
 }

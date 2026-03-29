@@ -1,0 +1,19 @@
+{
+  "id": "tv_shows",
+  "title": "TV Shows",
+  "description": "Look up TV show details, casts, and TV-focused performer credits with TVMaze.",
+  "version": "1.0.0",
+  "domain": "entertainment",
+  "domains": [
+    "entertainment"
+  ],
+  "platforms": [
+    "mac",
+    "pi_cpu",
+    "pi_hailo"
+  ],
+  "account_mode": "none",
+  "download_url": "skills/tv_shows/tv_shows.zip",
+  "logo_url": "skills/tv_shows/logo.svg",
+  "meta_url": "skills/tv_shows/meta.json"
+}

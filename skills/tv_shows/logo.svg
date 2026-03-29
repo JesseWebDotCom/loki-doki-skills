@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="TV Shows logo">
+  <rect width="128" height="128" rx="28" fill="#132238"/>
+  <rect x="20" y="28" width="88" height="60" rx="10" fill="#f6efe2"/>
+  <rect x="30" y="38" width="68" height="40" rx="6" fill="#2f6fed"/>
+  <path d="M46 49h36l-18 18z" fill="#f6efe2"/>
+  <rect x="38" y="95" width="52" height="8" rx="4" fill="#f28f3b"/>
+  <rect x="58" y="86" width="12" height="12" rx="4" fill="#f28f3b"/>
+</svg>

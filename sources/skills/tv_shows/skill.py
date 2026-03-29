@@ -127,6 +127,9 @@ def _tvmaze_json(path: str) -> dict[str, Any] | list[Any]:
 
 def _show_name_from_request(request_text: str) -> str:
     cleaned = " ".join(request_text.strip(" ?!").split())
+    # If user says 'the show X', treat as 'the tv show X' for better matching
+    cleaned = re.sub(r"(?i)\bthe show ([a-z0-9 ']+)", r"the tv show \1", cleaned)
+    cleaned = re.sub(r"(?i)\bshow ([a-z0-9 ']+)", r"tv show \1", cleaned)
     patterns = (
         r"(?i)(?:cast of|who was in|who starred in|who was on)\s+(?:the\s+)?(?:tv\s+show\s+|tv\s+series\s+|show\s+|series\s+)?(?P<name>.+)$",
         r"(?i)(?:tell me about|show details for|series details for)\s+(?:the\s+)?(?:tv\s+show\s+|tv\s+series\s+|show\s+|series\s+)?(?P<name>.+)$",

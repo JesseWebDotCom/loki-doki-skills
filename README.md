@@ -1,6 +1,6 @@
 # LokiDoki Skills
 
-![LokiDoki Skills overview](./readme-hero.svg)
+![LokiDoki Skills overview](./readme-hero-v2.svg)
 
 Skills for [LokiDoki](https://github.com/JesseWebDotCom/loki-doki), the private, personal AI platform for your home.
 

@@ -11,6 +11,7 @@ SOURCES_DIR = ROOT_DIR / "sources" / "skills"
 PUBLISHED_DIR = ROOT_DIR / "skills"
 INDEX_PATH = ROOT_DIR / "index.json"
 README_PATH = ROOT_DIR / "README.md"
+HERO_PATH = ROOT_DIR / "readme-hero-v2.svg"
 REPO_URL = "https://github.com/JesseWebDotCom/loki-doki-skills"
 SOURCE_REPO_URL = "https://github.com/JesseWebDotCom/loki-doki"
 SOURCE_REPO_LINK = f"[LokiDoki]({SOURCE_REPO_URL})"
@@ -102,7 +103,7 @@ def build_root_readme(entries: list[dict[str, object]]) -> str:
     return "\n".join([
         "# LokiDoki Skills",
         "",
-        "![LokiDoki Skills overview](./readme-hero.svg)",
+        f"![LokiDoki Skills overview](./{HERO_PATH.name})",
         "",
         f"Skills for {SOURCE_REPO_LINK}, the private, personal AI platform for your home.",
         "",

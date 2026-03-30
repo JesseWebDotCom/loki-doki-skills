@@ -45,7 +45,8 @@ def _lookup_result(request_text: str) -> dict[str, Any]:
     extract = str(summary.get("extract") or "").strip()
     description = str(summary.get("description") or "").strip()
     display_title = str(summary.get("title") or title)
-    reply = _summary_text(display_title, description, extract)
+    content_urls = dict(summary.get("content_urls") or {})
+    reply = _summary_text(display_title, description, extract, content_urls)
     return {
         "ok": True,
         "skill": "wikipedia",
@@ -135,11 +136,18 @@ def _apply_media_hint(query: str, lowered_request: str) -> str:
     return query
 
 
-def _summary_text(title: str, description: str, extract: str) -> str:
+def _summary_text(title: str, description: str, extract: str, content_urls: dict[str, Any] | None = None) -> str:
     clean_extract = _plain_text(extract)
+    url = ""
+    if content_urls and "desktop" in content_urls:
+        url = content_urls["desktop"].get("page", "")
+
+    header = f"### {title}"
     if description:
-        return f"{title} is {description}. {clean_extract}".strip()
-    return f"{title}. {clean_extract}".strip()
+        header += f"\n*{description}*"
+    
+    source_link = f"\n\n[Read more on Wikipedia]({url})" if url else ""
+    return f"{header}\n\n{clean_extract}{source_link}".strip()
 
 
 def _plain_text(value: str) -> str:

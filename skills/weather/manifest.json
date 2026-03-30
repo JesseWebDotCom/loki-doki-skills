@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "id": "weather",
+  "title": "Weather",
+  "domain": "weather",
+  "description": "Current weather and short forecast.",
+  "version": "1.0.0",
+  "load_type": "lazy",
+  "account_mode": "none",
+  "system": false,
+  "enabled_by_default": true,
+  "required_context": ["location"],
+  "optional_context": ["timezone", "units"],
+  "permissions": {
+    "default": "all_users"
+  },
+  "runtime_dependencies": [
+    { "package": "httpx", "version": ">=0.27.0" }
+  ],
+  "skill_dependencies": {
+    "required": [],
+    "optional": []
+  },
+  "actions": {
+    "get_current": {
+      "title": "Get Current Weather",
+      "description": "Return current weather conditions.",
+      "enabled": true,
+      "required_context": ["location"],
+      "optional_context": ["timezone", "units"],
+      "timeout_ms": 4000,
+      "cache_ttl_sec": 600,
+      "phrases": ["what's the weather", "current weather", "weather right now"],
+      "keywords": ["weather", "temperature", "forecast", "outside"],
+      "negative_keywords": ["movie", "calendar", "light"],
+      "required_entities": [],
+      "optional_entities": []
+    },
+    "get_forecast": {
+      "title": "Get Forecast",
+      "description": "Return forecast for a date or short range.",
+      "enabled": true,
+      "required_context": ["location"],
+      "optional_context": ["timezone", "units"],
+      "timeout_ms": 4000,
+      "cache_ttl_sec": 1800,
+      "phrases": ["weather tomorrow", "forecast", "will it rain", "do I need an umbrella"],
+      "keywords": ["forecast", "tomorrow", "rain", "umbrella", "weather"],
+      "negative_keywords": ["movie", "calendar", "showtimes"],
+      "required_entities": [],
+      "optional_entities": ["date"]
+    }
+  }
+}

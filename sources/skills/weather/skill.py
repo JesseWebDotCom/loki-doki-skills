@@ -1,117 +1,81 @@
-"""Installable weather skill package."""
-
-from __future__ import annotations
-
-import re
-from typing import Any
-
-from app.skills.base import BaseSkill
-from app.subsystems.text.web_search import search_web
-
+import httpx
+from core.base_skill import BaseSkill
 
 class WeatherSkill(BaseSkill):
-    """Return a structured weather report."""
+    manifest = {
+        "id": "weather",
+        "domain": "weather",
+        "title": "Weather",
+        "actions": {"get_current": {}, "get_forecast": {}},
+    }
 
-    manifest: dict[str, Any] = {}
-
-    async def execute(self, action: str, ctx: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
-        """Execute the requested weather action."""
+    async def execute(self, action: str, ctx: dict, **kwargs) -> dict:
         self.validate_action(action)
-        if action != "get_weather":
-            raise ValueError(f"Unhandled action: {action}")
-        request_text = str(ctx.get("request_text") or "").strip().lower()
-        requested_location = str(kwargs.get("location") or ctx.get("location") or "local").strip()
-        date_hint = str(kwargs.get("date") or "today").strip()
-        result = search_web(f"weather in {requested_location} {date_hint}".strip())
-        metadata = result.metadata or {}
-        if not metadata:
-            return {
-                "ok": False,
-                "skill": "weather",
-                "action": "get_weather",
-                "data": {"location": requested_location},
-                "meta": {"source": result.source},
-                "presentation": {"type": "weather_report"},
-                "errors": ["Weather data is unavailable right now."],
-            }
-        resolved_location = _preferred_location(requested_location, str(metadata.get("location") or ""))
+        if action == "get_current":
+            return await self.get_current(ctx, **kwargs)
+        if action == "get_forecast":
+            return await self.get_forecast(ctx, **kwargs)
+        raise ValueError(f"Unhandled action: {action}")
+
+    def _resolve_location(self, ctx: dict, location: tuple[float, float] | None = None) -> tuple[float, float]:
+        if location:
+            return location
+        if "location" not in ctx or not ctx["location"]:
+            raise ValueError("Weather skill requires location context")
+        return ctx["location"]
+
+    async def get_current(self, ctx: dict, location: tuple[float, float] | None = None) -> dict:
+        lat, lon = self._resolve_location(ctx, location)
+        async with httpx.AsyncClient(timeout=4.0) as client:
+            response = await client.get(
+                "https://api.open-meteo.com/v1/forecast",
+                params={"latitude": lat, "longitude": lon, "current_weather": True},
+            )
+            payload = response.json()
+        current = payload.get("current_weather", {})
         return {
             "ok": True,
             "skill": "weather",
-            "action": "get_weather",
+            "action": "get_current",
             "data": {
-                "location": resolved_location,
-                "condition": metadata.get("description", "current conditions"),
-                "current_temp_f": metadata.get("current_temp_f", ""),
-                "high_temp_f": metadata.get("high_temp_f", ""),
-                "low_temp_f": metadata.get("low_temp_f", ""),
-                "chance_of_rain": metadata.get("chance_of_rain", ""),
-                "peak_chance_of_rain": metadata.get("peak_chance_of_rain", metadata.get("chance_of_rain", "")),
-                "chance_of_snow": metadata.get("chance_of_snow", ""),
-                "chance_of_sleet": metadata.get("chance_of_sleet", ""),
-                "wind_mph": metadata.get("wind_mph", ""),
-                "wind_direction": metadata.get("wind_direction", ""),
-                "date": date_hint,
-                "summary": _weather_summary(metadata, request_text, resolved_location),
+                "temperature": current.get("temperature"),
+                "windspeed": current.get("windspeed"),
+                "weathercode": current.get("weathercode"),
+                "location": {"latitude": lat, "longitude": lon},
             },
-            "meta": {"source": result.source, "cache_hit": False},
-            "presentation": {"type": "weather_report"},
+            "meta": {"source": "open_meteo", "cache_hit": False, "execution_mode": "fast"},
+            "presentation": {
+                "type": "weather_current",
+                "max_voice_items": 1,
+                "max_screen_items": 1,
+                "speak_priority_fields": ["temperature", "weathercode", "windspeed"],
+            },
             "errors": [],
         }
 
-
-def _weather_summary(metadata: dict[str, Any], request_text: str, location_label: str) -> str:
-    """Return a more conversational reply matched to the user's ask."""
-    location = _display_location(location_label or str(metadata.get("location") or "your area"))
-    condition = str(metadata.get("description") or "current conditions").lower()
-    high = str(metadata.get("high_temp_f") or "?")
-    low = str(metadata.get("low_temp_f") or "?")
-    if _mentions(request_text, ("snow", "snowing", "flurries", "blizzard")):
-        chance = _int_value(metadata.get("chance_of_snow"))
-        if chance > 0 or "snow" in condition:
-            return f"It does look like snow is possible in {location}. The forecast shows {condition} with about a {chance}% chance of snow, plus a high of {high} F and a low of {low} F."
-        return f"I don't see snow in the forecast for {location} right now. It looks {condition}, with a high of {high} F and a low of {low} F."
-    if _mentions(request_text, ("rain", "umbrella", "raining", "storm")):
-        chance = _int_value(metadata.get("chance_of_rain"))
-        if chance >= 30 or "rain" in condition or "storm" in condition:
-            return f"Rain looks possible in {location}. The forecast has about a {chance}% chance of rain, with {condition} conditions and temperatures from {low} F to {high} F."
-        return f"I don't see much rain risk in {location} right now. The forecast looks {condition}, with only about a {chance}% chance of rain."
-    if _mentions(request_text, ("sleet", "icy", "freezing rain")):
-        chance = _int_value(metadata.get("chance_of_sleet"))
-        if chance > 0 or "sleet" in condition:
-            return f"Sleet is in the mix for {location}. The forecast shows about a {chance}% chance, with a high of {high} F and a low of {low} F."
-        return f"I don't see sleet called out in the current {location} forecast. It looks {condition}, with temperatures between {low} F and {high} F."
-    average_rain = _int_value(metadata.get("chance_of_rain"))
-    peak_rain = _int_value(metadata.get("peak_chance_of_rain"))
-    if peak_rain >= 60:
-        return (
-            f"In {location}, it's {condition} with a high of {high} F and a low of {low} F. "
-            f"Rain risk builds later, with around a {average_rain}% overall chance and peaks near {peak_rain}%."
-        )
-    return f"In {location}, it's {condition} with a high of {high} F and a low of {low} F."
-
-
-def _mentions(request_text: str, tokens: tuple[str, ...]) -> bool:
-    """Return whether any token appears in the original weather request."""
-    return any(re.search(rf"\b{re.escape(token)}\b", request_text) for token in tokens)
-
-
-def _int_value(value: Any) -> int:
-    """Return a best-effort integer chance value."""
-    text = str(value or "").strip()
-    return int(text) if text.isdigit() else 0
-
-
-def _display_location(location: str) -> str:
-    """Return a user-facing location label."""
-    stripped = location.strip()
-    return stripped.title() if stripped.islower() else stripped
-
-
-def _preferred_location(requested_location: str, provider_location: str) -> str:
-    """Prefer the more specific location label when the provider response is vague."""
-    requested = requested_location.strip()
-    provider = provider_location.strip()
-    if requested and "," in requested:
-        return requested
-    return provider or requested or "local"
+    async def get_forecast(self, ctx: dict, date: str = "today", location: tuple[float, float] | None = None) -> dict:
+        lat, lon = self._resolve_location(ctx, location)
+        async with httpx.AsyncClient(timeout=4.0) as client:
+            response = await client.get(
+                "https://api.open-meteo.com/v1/forecast",
+                params={
+                    "latitude": lat, "longitude": lon,
+                    "daily": "temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+                    "timezone": "auto",
+                },
+            )
+            payload = response.json()
+        return {
+            "ok": True,
+            "skill": "weather",
+            "action": "get_forecast",
+            "data": {"date": date, "location": {"latitude": lat, "longitude": lon}, "daily": payload.get("daily", {})},
+            "meta": {"source": "open_meteo", "cache_hit": False, "execution_mode": "detailed"},
+            "presentation": {
+                "type": "weather_forecast",
+                "max_voice_items": 1,
+                "max_screen_items": 5,
+                "speak_priority_fields": ["date", "daily"],
+            },
+            "errors": [],
+        }

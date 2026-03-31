@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "movie_showtimes",
+  "title": "Movie Showtimes",
+  "domain": "movies",
+  "description": "Find movie showtimes by location and date.",
+  "version": "1.0.0",
+  "load_type": "lazy",
+  "account_mode": "none",
+  "system": false,
+  "enabled_by_default": true,
+  "required_context": ["location"],
+  "optional_context": ["preferred_theater", "date"],
+  "permissions": {
+    "default": "all_users"
+  },
+  "runtime_dependencies": [
+    { "package": "httpx", "version": ">=0.27.0" }
+  ],
+  "skill_dependencies": {
+    "required": [],
+    "optional": [
+      { "id": "web_search", "reason": "Fallback when primary showtimes provider is unavailable" }
+    ]
+  },
+  "actions": {
+    "get_showtimes": {
+      "title": "Get Showtimes",
+      "description": "Return movie showtimes for the given date and location.",
+      "enabled": true,
+      "required_context": ["location"],
+      "optional_context": ["preferred_theater", "date"],
+      "timeout_ms": 5000,
+      "cache_ttl_sec": 900,
+      "phrases": [
+        "what movies are playing", "movie showtimes", "what's playing near me"
+      ],
+      "keywords": ["movie", "movies", "showtimes", "theater", "playing", "tonight", "today"],
+      "negative_keywords": ["review", "cast", "actor", "rent", "buy", "stream"],
+      "required_entities": [],
+      "optional_entities": ["movie_title", "date"]
+    }
+  }
+}

@@ -18,7 +18,12 @@ SOURCE_REPO_LINK = f"[LokiDoki]({SOURCE_REPO_URL})"
 
 
 def canonical_logo(source_dir: Path) -> Path:
-    matches = sorted(path for path in source_dir.iterdir() if path.suffix.lower() in {".svg", ".png", ".jpg", ".jpeg", ".webp"} and "logo" in path.stem.lower())
+    matches = sorted(
+        path
+        for path in source_dir.iterdir()
+        if path.suffix.lower() in {".svg", ".png", ".jpg", ".jpeg", ".webp"}
+        and "logo" in path.stem.lower()
+    )
     if not matches:
         raise RuntimeError(f"{source_dir.name} is missing a logo image")
     return matches[0]
@@ -41,7 +46,9 @@ def build_zip(source_dir: Path, target_zip: Path) -> None:
                 archive.write(path, arcname=path.relative_to(source_dir).as_posix())
 
 
-def write_skill_files(source_dir: Path, manifest: dict[str, object]) -> dict[str, object]:
+def write_skill_files(
+    source_dir: Path, manifest: dict[str, object]
+) -> dict[str, object]:
     skill_id = str(manifest.get("id") or source_dir.name).strip()
     title = str(manifest.get("title") or skill_id).strip()
     description = str(manifest.get("description") or "LokiDoki skill package.").strip()
@@ -65,26 +72,30 @@ def write_skill_files(source_dir: Path, manifest: dict[str, object]) -> dict[str
         "logo_url": f"skills/{skill_id}/logo.svg",
         "meta_url": f"skills/{skill_id}/meta.json",
     }
-    (publish_dir / "meta.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
-    readme = "\n".join([
-        f"# {title}",
-        "",
-        f'<img src="./logo.svg" alt="{title} logo" width="72" height="72">',
-        "",
-        description,
-        "",
-        "## Install",
-        "",
-        f"- Open {SOURCE_REPO_LINK} and browse the skills catalog",
-        f"- Direct package: [`{skill_id}.zip`](./{skill_id}.zip)",
-        "",
-        "## Metadata",
-        "",
-        f"- ID: `{skill_id}`",
-        f"- Version: `{version}`",
-        f"- Meta: [`meta.json`](./meta.json)",
-        "",
-    ])
+    (publish_dir / "meta.json").write_text(
+        json.dumps(meta, indent=2) + "\n", encoding="utf-8"
+    )
+    readme = "\n".join(
+        [
+            f"# {title}",
+            "",
+            f'<img src="./logo.svg" alt="{title} logo" width="72" height="72">',
+            "",
+            description,
+            "",
+            "## Install",
+            "",
+            f"- Open {SOURCE_REPO_LINK} and browse the skills catalog",
+            f"- Direct package: [`{skill_id}.zip`](./{skill_id}.zip)",
+            "",
+            "## Metadata",
+            "",
+            f"- ID: `{skill_id}`",
+            f"- Version: `{version}`",
+            f"- Meta: [`meta.json`](./meta.json)",
+            "",
+        ]
+    )
     (publish_dir / "README.md").write_text(readme + "\n", encoding="utf-8")
     return meta
 
@@ -99,41 +110,47 @@ def build_root_readme(entries: list[dict[str, object]]) -> str:
         )
         for item in entries
     ]
-    gallery_block = ["<table>", f"<tr>{''.join(gallery)}</tr>", "</table>"] if gallery else ["_No skills published yet._"]
-    return "\n".join([
-        "# LokiDoki Skills",
-        "",
-        f"![LokiDoki Skills overview](./{HERO_PATH.name})",
-        "",
-        f"Skills for {SOURCE_REPO_LINK}, the private, personal AI platform for your home.",
-        "",
-        f"This repo is the official installable skills catalog for {SOURCE_REPO_LINK}.",
-        "",
-        "## Browse Skills",
-        "",
-        *gallery_block,
-        "",
-        "## How To Use",
-        "",
-        f"- Open the {SOURCE_REPO_LINK} UI",
-        "- Go to Administration",
-        "- Open the skills catalog",
-        "- Browse and install skills from there",
-        "",
-        "## How To Create",
-        "",
-        f"- Open the {SOURCE_REPO_LINK} UI",
-        "- Go to Administration and open the skills area",
-        "- Click create, customize the skill, and save it",
-        "- Export the finished skill package from the LokiDoki UI",
-        "",
-        "## How To Submit",
-        "",
-        "- Add the exported skill files to this repo in a new branch",
-        "- Commit the generated changes",
-        "- Open a pull request for review",
-        "",
-    ]) + "\n"
+    gallery_block = (
+        ["<table>", f"<tr>{''.join(gallery)}</tr>", "</table>"]
+        if gallery
+        else ["_No skills published yet._"]
+    )
+    return (
+        "\n".join(
+            [
+                "# LokiDoki Skills",
+                "",
+                f"![LokiDoki Skills overview](./{HERO_PATH.name})",
+                "",
+                f"Skills for {SOURCE_REPO_LINK}, the private, personal AI platform for your home.",
+                "",
+                f"This repo is the official installable skills catalog for {SOURCE_REPO_LINK}.",
+                "",
+                "## Browse Skills",
+                "",
+                *gallery_block,
+                "",
+                "## How To Use",
+                "",
+                f"- Open the {SOURCE_REPO_LINK} UI",
+                "- Go to Administration",
+                "- Open the skills catalog",
+                "- Browse and install skills from there",
+                "",
+                "## How To Create",
+                "",
+                'Want to build your own skill? Check out the [Building Skills Guide](./BUILDING.md) for a detailed walkthrough of the skill design, the expected execution pattern, and a complete "Hello World" example to get you started!',
+                "",
+                "## How To Submit",
+                "",
+                "- Add the exported skill files to this repo in a new branch",
+                "- Commit the generated changes",
+                "- Open a pull request for review",
+                "",
+            ]
+        )
+        + "\n"
+    )
 
 
 def main() -> None:

@@ -2,7 +2,7 @@
 
 <img src="./logo.svg" alt="Weather logo" width="72" height="72">
 
-Return current weather summaries for a location.
+Current weather and short forecast.
 
 ## Install
 

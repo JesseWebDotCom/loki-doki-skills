@@ -2,7 +2,7 @@
 
 <img src="./logo.svg" alt="Home Assistant logo" width="72" height="72">
 
-Control basic Home Assistant entities and read their state.
+Control and query Home Assistant devices.
 
 ## Install
 
@@ -12,6 +12,6 @@ Control basic Home Assistant entities and read their state.
 ## Metadata
 
 - ID: `home_assistant`
-- Version: `1.1.0`
+- Version: `1.0.0`
 - Meta: [`meta.json`](./meta.json)
 

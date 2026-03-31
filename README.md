@@ -21,10 +21,7 @@ This repo is the official installable skills catalog for [LokiDoki](https://gith
 
 ## How To Create
 
-- Open the [LokiDoki](https://github.com/JesseWebDotCom/loki-doki) UI
-- Go to Administration and open the skills area
-- Click create, customize the skill, and save it
-- Export the finished skill package from the LokiDoki UI
+Want to build your own skill? Check out the [Building Skills Guide](./BUILDING.md) for a detailed walkthrough of the skill design, the expected execution pattern, and a complete "Hello World" example to get you started!
 
 ## How To Submit
 

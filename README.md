@@ -1,11 +1,34 @@
-# LokiDoki Skills Repository
+# LokiDoki Skills
 
-This repository contains community and core skills for **LokiDoki**, the private, local-first AI platform for your home.
+![LokiDoki Skills overview](./readme-hero.svg)
 
-LokiDoki skills are lightweight, sandboxed Python packages that fetch data or execute actions. They return structured JSON facts, which LokiDoki's core Response Generator then translates into natural language for the user.
+Skills for [LokiDoki](https://github.com/JesseWebDotCom/loki-doki), the private, personal AI platform for your home.
 
----
+This repo is the official installable skills catalog for [LokiDoki](https://github.com/JesseWebDotCom/loki-doki).
 
-## Creating a Skill
+## Browse Skills
 
-Want to build your own skill? Check out the Building Skills Guide for a detailed walkthrough of the skill design, the expected execution pattern, and a complete "Hello World" example to get you started!
+<table>
+<tr><td align="center" valign="top" width="160"><a href="./skills/family_calendar/"><img src="./skills/family_calendar/logo.svg" alt="Family Calendar" width="72" height="72"><br><strong>Family Calendar</strong></a></td><td align="center" valign="top" width="160"><a href="./skills/home_assistant/"><img src="./skills/home_assistant/logo.svg" alt="Home Assistant" width="72" height="72"><br><strong>Home Assistant</strong></a></td><td align="center" valign="top" width="160"><a href="./skills/movies/"><img src="./skills/movies/logo.svg" alt="Movies" width="72" height="72"><br><strong>Movies</strong></a></td><td align="center" valign="top" width="160"><a href="./skills/reminders/"><img src="./skills/reminders/logo.svg" alt="Reminders" width="72" height="72"><br><strong>Reminders</strong></a></td><td align="center" valign="top" width="160"><a href="./skills/shopping_list/"><img src="./skills/shopping_list/logo.svg" alt="Shopping List" width="72" height="72"><br><strong>Shopping List</strong></a></td><td align="center" valign="top" width="160"><a href="./skills/tv_shows/"><img src="./skills/tv_shows/logo.svg" alt="TV Shows" width="72" height="72"><br><strong>TV Shows</strong></a></td><td align="center" valign="top" width="160"><a href="./skills/weather/"><img src="./skills/weather/logo.svg" alt="Weather" width="72" height="72"><br><strong>Weather</strong></a></td><td align="center" valign="top" width="160"><a href="./skills/wikipedia/"><img src="./skills/wikipedia/logo.svg" alt="Wikipedia" width="72" height="72"><br><strong>Wikipedia</strong></a></td></tr>
+</table>
+
+## How To Use
+
+- Open the [LokiDoki](https://github.com/JesseWebDotCom/loki-doki) UI
+- Go to Administration
+- Open the skills catalog
+- Browse and install skills from there
+
+## How To Create
+
+- Open the [LokiDoki](https://github.com/JesseWebDotCom/loki-doki) UI
+- Go to Administration and open the skills area
+- Click create, customize the skill, and save it
+- Export the finished skill package from the LokiDoki UI
+
+## How To Submit
+
+- Add the exported skill files to this repo in a new branch
+- Commit the generated changes
+- Open a pull request for review
+

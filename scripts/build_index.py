@@ -32,7 +32,7 @@ def canonical_logo(source_dir: Path) -> Path:
 def load_manifest(source_dir: Path) -> dict[str, object]:
     manifest = json.loads((source_dir / "manifest.json").read_text(encoding="utf-8"))
     logo_path = source_dir / str(manifest.get("logo_path") or "")
-    if not logo_path.exists():
+    if not logo_path.is_file():
         logo_path = canonical_logo(source_dir)
         manifest["logo_path"] = logo_path.name
     return manifest

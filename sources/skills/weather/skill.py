@@ -1,13 +1,16 @@
+"""Weather skill backed by Open-Meteo."""
+
+from __future__ import annotations
+
+from typing import Any, Awaitable, Callable
+
 import httpx
+
 from app.skills.base import BaseSkill
 
+
 class WeatherSkill(BaseSkill):
-    manifest = {
-        "id": "weather",
-        "domain": "weather",
-        "title": "Weather",
-        "actions": {"get_current": {}, "get_forecast": {}},
-    }
+    """Return current weather and forecasts."""
 
     async def execute(
         self,
@@ -16,22 +19,36 @@ class WeatherSkill(BaseSkill):
         emit_progress: Callable[[str], Awaitable[None]],
         **kwargs: Any,
     ) -> dict[str, Any]:
+        """Execute the requested weather action."""
         self.validate_action(action)
         if action == "get_current":
+            await emit_progress("Checking current weather...")
             return await self.get_current(ctx, **kwargs)
         if action == "get_forecast":
+            await emit_progress("Fetching weather forecast...")
             return await self.get_forecast(ctx, **kwargs)
         raise ValueError(f"Unhandled action: {action}")
 
-    def _resolve_location(self, ctx: dict, location: tuple[float, float] | None = None) -> tuple[float, float]:
+    def _resolve_location(self, ctx: dict[str, Any], location: tuple[float, float] | None = None) -> tuple[float, float] | None:
         if location:
             return location
-        if "location" not in ctx or not ctx["location"]:
-            raise ValueError("Weather skill requires location context")
-        return ctx["location"]
+        # Check ctx['location'] which is usually injected by the context manager/geo provider
+        loc = ctx.get("location")
+        if not loc or not isinstance(loc, (list, tuple)) or len(loc) < 2:
+            return None
+        return (float(loc[0]), float(loc[1]))
 
-    async def get_current(self, ctx: dict, location: tuple[float, float] | None = None) -> dict:
-        lat, lon = self._resolve_location(ctx, location)
+    async def get_current(self, ctx: dict[str, Any], location: tuple[float, float] | None = None) -> dict[str, Any]:
+        res = self._resolve_location(ctx, location)
+        if res is None:
+            return {
+                "ok": False,
+                "skill": "weather",
+                "action": "get_current",
+                "result": {},
+                "errors": ["Location not found. Please set a home location or provide coordinates."],
+            }
+        lat, lon = res
         async with httpx.AsyncClient(timeout=4.0) as client:
             response = await client.get(
                 "https://api.open-meteo.com/v1/forecast",
@@ -59,8 +76,19 @@ class WeatherSkill(BaseSkill):
             "errors": [],
         }
 
-    async def get_forecast(self, ctx: dict, date: str = "today", location: tuple[float, float] | None = None) -> dict:
-        lat, lon = self._resolve_location(ctx, location)
+    async def get_forecast(
+        self, ctx: dict[str, Any], date: str = "today", location: tuple[float, float] | None = None
+    ) -> dict[str, Any]:
+        res = self._resolve_location(ctx, location)
+        if res is None:
+            return {
+                "ok": False,
+                "skill": "weather",
+                "action": "get_forecast",
+                "result": {},
+                "errors": ["Location not found. Please set a home location or provide coordinates."],
+            }
+        lat, lon = res
         async with httpx.AsyncClient(timeout=4.0) as client:
             response = await client.get(
                 "https://api.open-meteo.com/v1/forecast",

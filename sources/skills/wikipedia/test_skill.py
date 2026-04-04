@@ -1,7 +1,7 @@
 import pytest
 import httpx
 import respx
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, AsyncMock
 
 from sources.skills.wikipedia.skill import WikipediaSkill
 
@@ -44,7 +44,7 @@ async def test_lookup_article_success(skill):
     )
     
     ctx = {"request_text": "look up Dune"}
-    emit_progress = MagicMock()
+    emit_progress = AsyncMock()
     
     result = await skill.execute("lookup_article", ctx, emit_progress)
     
@@ -81,8 +81,13 @@ async def test_lookup_article_disambiguation_retry(skill):
         }
     )
     
+    # Mock final desktop page for infobox
+    respx.get("https://en.wikipedia.org/wiki/Mercury_(element)").respond(
+        text="<table class='infobox'><tr><th>Symbol</th><td>Hg</td></tr></table>"
+    )
+    
     ctx = {"request_text": "Mercury"}
-    emit_progress = MagicMock()
+    emit_progress = AsyncMock()
     
     result = await skill.execute("lookup_article", ctx, emit_progress)
     
@@ -92,7 +97,7 @@ async def test_lookup_article_disambiguation_retry(skill):
 @pytest.mark.asyncio
 async def test_empty_query(skill):
     ctx = {"request_text": ""}
-    emit_progress = MagicMock()
+    emit_progress = AsyncMock()
     result = await skill.execute("lookup_article", ctx, emit_progress)
     assert result["ok"] is False
     assert "Tell me what you want to look up" in result["errors"][0]

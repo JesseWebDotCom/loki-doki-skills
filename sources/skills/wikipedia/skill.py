@@ -58,7 +58,7 @@ class WikipediaSkill(BaseSkill):
                 except httpx.RequestError:
                     continue
 
-            if not payload:
+            if not payload or payload.get("type") == "disambiguation":
                 # Final attempt: use search API to find the real title
                 search_url = "https://en.wikipedia.org/w/api.php"
                 params = {"action": "query", "list": "search", "srsearch": query, "format": "json", "srlimit": 1}

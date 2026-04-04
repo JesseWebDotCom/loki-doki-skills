@@ -1,7 +1,7 @@
 import pytest
 import httpx
 import respx
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, AsyncMock, patch
 
 from sources.skills.movies.skill import MoviesSkill
 
@@ -51,7 +51,7 @@ async def test_get_movie_details_wikipedia_and_search(skill):
     
     with patch("sources.skills.movies.skill.parsed_search_results", return_value=mock_search):
         ctx = {"request_text": "runtime for Dune"}
-        emit_progress = MagicMock()
+        emit_progress = AsyncMock()
         
         result = await skill.execute("get_movie_details", ctx, emit_progress)
         
@@ -74,7 +74,7 @@ async def test_get_showtimes_with_search(skill):
     
     with patch("sources.skills.movies.skill.parsed_search_results", return_value=mock_search):
         ctx = {"request_text": "Dune showtimes in Milford", "location": "Milford, CT"}
-        emit_progress = MagicMock()
+        emit_progress = AsyncMock()
         
         result = await skill.execute("get_showtimes", ctx, emit_progress)
         
@@ -87,6 +87,6 @@ async def test_get_showtimes_with_search(skill):
 @pytest.mark.asyncio
 async def test_invalid_action(skill):
     ctx = {"request_text": "hello"}
-    emit_progress = MagicMock()
+    emit_progress = AsyncMock()
     with pytest.raises(ValueError, match="Unknown action"):
         await skill.execute("invalid_action", ctx, emit_progress)

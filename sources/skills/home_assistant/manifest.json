@@ -1,55 +1,124 @@
-    {
+{
   "schema_version": 1,
   "id": "home_assistant",
   "title": "Home Assistant",
   "domain": "smart_home",
   "description": "Control and query Home Assistant devices.",
+  "logo_path": "logo-home-assistant.svg",
   "version": "1.0.0",
   "load_type": "warm",
   "account_mode": "multiple",
   "system": false,
   "enabled_by_default": false,
   "required_context": [],
-  "optional_context": ["site", "room", "user_id"],
-  "permissions": {"default": "trusted_users"},
-  "runtime_dependencies": [{ "package": "httpx", "version": ">=0.27.0" }],
-  "skill_dependencies": {"required": [], "optional": []},
+  "optional_context": [
+    "site",
+    "room",
+    "user_id"
+  ],
+  "permissions": {
+    "default": "trusted_users"
+  },
+  "runtime_dependencies": [
+    {
+      "package": "httpx",
+      "version": ">=0.27.0"
+    }
+  ],
+  "skill_dependencies": {
+    "required": [],
+    "optional": []
+  },
   "actions": {
     "turn_on": {
       "title": "Turn On",
       "enabled": true,
       "required_context": [],
-      "optional_context": ["site", "room"],
+      "optional_context": [
+        "site",
+        "room"
+      ],
       "timeout_ms": 4000,
       "cache_ttl_sec": 0,
-      "phrases": ["turn on", "switch on", "enable"],
-      "keywords": ["turn on", "light", "lamp", "switch", "fan"],
-      "required_entities": ["target_entity"],
-      "optional_entities": ["site", "room"]
+      "phrases": [
+        "turn on",
+        "switch on",
+        "enable"
+      ],
+      "keywords": [
+        "turn on",
+        "light",
+        "lamp",
+        "switch",
+        "fan"
+      ],
+      "required_entities": [
+        "target_entity"
+      ],
+      "optional_entities": [
+        "site",
+        "room"
+      ]
     },
     "turn_off": {
       "title": "Turn Off",
       "enabled": true,
       "required_context": [],
-      "optional_context": ["site", "room"],
+      "optional_context": [
+        "site",
+        "room"
+      ],
       "timeout_ms": 4000,
       "cache_ttl_sec": 0,
-      "phrases": ["turn off", "switch off", "disable"],
-      "keywords": ["turn off", "light", "lamp", "switch", "fan"],
-      "required_entities": ["target_entity"],
-      "optional_entities": ["site", "room"]
+      "phrases": [
+        "turn off",
+        "switch off",
+        "disable"
+      ],
+      "keywords": [
+        "turn off",
+        "light",
+        "lamp",
+        "switch",
+        "fan"
+      ],
+      "required_entities": [
+        "target_entity"
+      ],
+      "optional_entities": [
+        "site",
+        "room"
+      ]
     },
     "get_state": {
       "title": "Get State",
       "enabled": true,
       "required_context": [],
-      "optional_context": ["site", "room"],
+      "optional_context": [
+        "site",
+        "room"
+      ],
       "timeout_ms": 4000,
       "cache_ttl_sec": 5,
-      "phrases": ["is the", "what is the status of", "what's the status of"],
-      "keywords": ["status", "state", "on", "off", "temperature"],
-      "required_entities": ["target_entity"],
-      "optional_entities": ["site", "room"]
+      "phrases": [
+        "is the",
+        "what is the status of",
+        "what's the status of"
+      ],
+      "keywords": [
+        "status",
+        "state",
+        "on",
+        "off",
+        "temperature"
+      ],
+      "required_entities": [
+        "target_entity"
+      ],
+      "optional_entities": [
+        "site",
+        "room"
+      ]
     }
   }
 }

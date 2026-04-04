@@ -1,6 +1,6 @@
 import pytest
 import respx
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, AsyncMock
 
 from sources.skills.tv_shows.skill import TvShowsSkill
 
@@ -34,7 +34,7 @@ async def test_get_show_details_success(skill):
     )
     
     ctx = {"request_text": "tell me about the show Sopranos"}
-    emit_progress = MagicMock()
+    emit_progress = AsyncMock()
     
     result = await skill.execute("get_show_details", ctx, emit_progress)
     
@@ -67,7 +67,7 @@ async def test_get_show_cast_success(skill):
     )
     
     ctx = {"request_text": "cast of Breaking Bad"}
-    emit_progress = MagicMock()
+    emit_progress = AsyncMock()
     
     result = await skill.execute("get_show_cast", ctx, emit_progress)
     
@@ -105,7 +105,7 @@ async def test_get_person_details_success(skill):
     )
     
     ctx = {"request_text": "tv actor Pedro Pascal"}
-    emit_progress = MagicMock()
+    emit_progress = AsyncMock()
     
     result = await skill.execute("get_person_details", ctx, emit_progress)
     
@@ -120,7 +120,7 @@ async def test_show_not_found(skill):
     respx.get("https://api.tvmaze.com/singlesearch/shows?q=NonExistent&embed=cast").respond(status_code=404)
     
     ctx = {"request_text": "show NonExistent"}
-    emit_progress = MagicMock()
+    emit_progress = AsyncMock()
     
     result = await skill.execute("get_show_details", ctx, emit_progress)
     assert result["ok"] is False

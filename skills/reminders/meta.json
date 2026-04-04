@@ -1,0 +1,19 @@
+{
+  "id": "reminders",
+  "title": "Reminders",
+  "description": "Store and read personal reminders locally for each signed-in user.",
+  "version": "1.0.0",
+  "domain": "reminders",
+  "domains": [
+    "reminders"
+  ],
+  "platforms": [
+    "mac",
+    "pi_cpu",
+    "pi_hailo"
+  ],
+  "account_mode": "none",
+  "download_url": "skills/reminders/reminders.zip",
+  "logo_url": "skills/reminders/logo.svg",
+  "meta_url": "skills/reminders/meta.json"
+}

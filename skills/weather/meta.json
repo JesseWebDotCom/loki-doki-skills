@@ -1,7 +1,7 @@
 {
   "id": "weather",
   "title": "Weather",
-  "description": "Return current weather summaries for a location.",
+  "description": "Current weather and short forecast.",
   "version": "1.0.0",
   "domain": "weather",
   "domains": [

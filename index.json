@@ -7,11 +7,11 @@
     {
       "id": "home_assistant",
       "title": "Home Assistant",
-      "description": "Control basic Home Assistant entities and read their state.",
-      "version": "1.1.0",
-      "domain": "home",
+      "description": "Control and query Home Assistant devices.",
+      "version": "1.0.0",
+      "domain": "smart_home",
       "domains": [
-        "home"
+        "smart_home"
       ],
       "platforms": [
         "mac",
@@ -64,7 +64,7 @@
     {
       "id": "weather",
       "title": "Weather",
-      "description": "Return current weather summaries for a location.",
+      "description": "Current weather and short forecast.",
       "version": "1.0.0",
       "domain": "weather",
       "domains": [

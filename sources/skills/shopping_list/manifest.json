@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "id": "shopping_list",
+  "title": "Shopping List",
+  "domain": "shopping",
+  "description": "Manage a shared local household shopping list.",
+  "logo_path": "logo-shopping-list.svg",
+  "version": "1.0.0",
+  "load_type": "lazy",
+  "account_mode": "none",
+  "system": false,
+  "enabled_by_default": true,
+  "required_context": [],
+  "optional_context": [],
+  "permissions": {
+    "default": "all_users"
+  },
+  "shared_context_fields": [],
+  "account_context_fields": [],
+  "runtime_dependencies": [],
+  "skill_dependencies": {
+    "required": [],
+    "optional": []
+  },
+  "actions": {
+    "add_item": {
+      "title": "Add Item",
+      "description": "Add an item to the shared shopping list.",
+      "enabled": true,
+      "required_context": [],
+      "optional_context": [],
+      "timeout_ms": 3000,
+      "cache_ttl_sec": 0,
+      "phrases": ["add to the shopping list", "put on the shopping list"],
+      "keywords": ["shopping", "grocery", "list", "buy", "add"],
+      "negative_keywords": ["movie", "weather", "calendar"],
+      "example_utterances": ["add milk to the shopping list"],
+      "required_entities": [],
+      "optional_entities": []
+    },
+    "list_items": {
+      "title": "List Items",
+      "description": "Read the shared shopping list.",
+      "enabled": true,
+      "required_context": [],
+      "optional_context": [],
+      "timeout_ms": 3000,
+      "cache_ttl_sec": 0,
+      "phrases": ["what's on the shopping list", "show the shopping list", "read the shopping list"],
+      "keywords": ["shopping", "grocery", "list"],
+      "negative_keywords": ["movie", "weather", "calendar"],
+      "example_utterances": ["what's on the shopping list"],
+      "required_entities": [],
+      "optional_entities": []
+    },
+    "remove_item": {
+      "title": "Remove Item",
+      "description": "Remove an item from the shared shopping list.",
+      "enabled": true,
+      "required_context": [],
+      "optional_context": [],
+      "timeout_ms": 3000,
+      "cache_ttl_sec": 0,
+      "phrases": ["remove from the shopping list", "take off the shopping list"],
+      "keywords": ["remove", "shopping", "grocery", "list", "done"],
+      "negative_keywords": ["movie", "weather", "calendar"],
+      "example_utterances": ["remove milk from the shopping list"],
+      "required_entities": [],
+      "optional_entities": []
+    }
+  }
+}

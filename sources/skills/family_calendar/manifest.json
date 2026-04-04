@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "id": "family_calendar",
+  "title": "Family Calendar",
+  "domain": "calendar",
+  "description": "Store and read shared household events in a local family calendar.",
+  "logo_path": "logo-family-calendar.svg",
+  "version": "1.0.0",
+  "load_type": "lazy",
+  "account_mode": "none",
+  "system": false,
+  "enabled_by_default": true,
+  "required_context": [],
+  "optional_context": ["timezone"],
+  "permissions": {
+    "default": "all_users"
+  },
+  "shared_context_fields": [
+    {
+      "key": "timezone",
+      "label": "Timezone",
+      "type": "text",
+      "placeholder": "America/New_York",
+      "help_text": "Used for phrasing calendar responses.",
+      "required": false,
+      "default_value": "America/New_York"
+    }
+  ],
+  "account_context_fields": [],
+  "runtime_dependencies": [],
+  "skill_dependencies": {
+    "required": [],
+    "optional": []
+  },
+  "actions": {
+    "get_agenda": {
+      "title": "Get Agenda",
+      "description": "Read the local family calendar.",
+      "enabled": true,
+      "required_context": [],
+      "optional_context": ["timezone"],
+      "timeout_ms": 3000,
+      "cache_ttl_sec": 0,
+      "phrases": ["calendar today", "calendar tomorrow", "what's on the calendar", "what's on the family calendar", "show the family calendar"],
+      "keywords": ["calendar", "schedule", "agenda", "today", "tomorrow", "week"],
+      "negative_keywords": ["movie", "weather", "shopping", "reminder"],
+      "example_utterances": ["what's on the family calendar tomorrow"],
+      "required_entities": [],
+      "optional_entities": []
+    },
+    "add_event": {
+      "title": "Add Event",
+      "description": "Add an event to the local family calendar.",
+      "enabled": true,
+      "required_context": [],
+      "optional_context": ["timezone"],
+      "timeout_ms": 3000,
+      "cache_ttl_sec": 0,
+      "phrases": ["add to the family calendar", "put on the calendar", "schedule"],
+      "keywords": ["calendar", "schedule", "add", "event", "tomorrow", "today"],
+      "negative_keywords": ["movie", "weather", "shopping"],
+      "example_utterances": ["add soccer practice tomorrow at 5 pm to the family calendar"],
+      "required_entities": [],
+      "optional_entities": []
+    }
+  }
+}

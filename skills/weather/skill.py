@@ -9,7 +9,7 @@ class WeatherSkill(BaseSkill):
         "actions": {"get_current": {}, "get_forecast": {}},
     }
 
-    async def execute(self, action: str, ctx: dict, **kwargs) -> dict:
+    async def execute(self, action: str, ctx: dict, emit_progress, **kwargs) -> dict:
         self.validate_action(action)
         if action == "get_current":
             return await self.get_current(ctx, **kwargs)

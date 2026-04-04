@@ -17,7 +17,10 @@
   },
   "shared_context_fields": [],
   "account_context_fields": [],
-  "runtime_dependencies": [],
+  "runtime_dependencies": [
+    { "package": "httpx", "version": ">=0.27.0" },
+    { "package": "beautifulsoup4", "version": ">=4.12.0" }
+  ],
   "skill_dependencies": {
     "required": [],
     "optional": []
@@ -31,8 +34,8 @@
       "optional_context": [],
       "timeout_ms": 5000,
       "cache_ttl_sec": 300,
-      "phrases": ["wikipedia", "wiki", "on wikipedia", "look up on wikipedia", "wikipedia article"],
-      "keywords": ["wikipedia", "wiki", "encyclopedia", "article"],
+      "phrases": ["wikipedia", "wiki", "on wikipedia", "look up on wikipedia", "wikipedia article", "who is", "who was", "what is", "what was", "tell me about", "have you seen", "have you heard of"],
+      "keywords": ["wikipedia", "wiki", "encyclopedia", "article", "who", "what", "where", "when", "how", "information", "details", "summary", "about", "seen", "heard", "told", "know"],
       "negative_keywords": ["weather", "calendar", "shopping", "lights"],
       "example_utterances": ["wikipedia marc singer", "look up taxi on wikipedia"],
       "required_entities": [],

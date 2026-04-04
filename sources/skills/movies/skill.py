@@ -1,30 +1,16 @@
-"""Movie lookup skill backed by the built-in search helper."""
+"""Movie lookup skill backed by the built-in search helper and Wikipedia Infobox scraping."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 import re
-from typing import Any
+from typing import Any, Awaitable, Callable
+
+import httpx
+from bs4 import BeautifulSoup
 
 from app.skills.base import BaseSkill
 from app.skills.local_runtime import parsed_search_results, title_case_phrase
-
-
-class MoviesSkill(BaseSkill):
-    """Return movie details and showtime summaries."""
-
-    manifest: dict[str, Any] = {}
-
-    async def execute(self, action: str, ctx: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
-        """Execute the requested movie action."""
-        del kwargs
-        self.validate_action(action)
-        request_text = str(ctx.get("request_text", "")).strip()
-        if action == "get_showtimes":
-            return _showtimes_result(request_text, ctx)
-        if action == "get_movie_details":
-            return _details_result(request_text)
-        raise ValueError(f"Unhandled action: {action}")
 
 
 @dataclass(frozen=True)
@@ -38,9 +24,40 @@ class ShowtimeRequest:
     theater_name: str
 
 
-def _showtimes_result(request_text: str, ctx: dict[str, Any]) -> dict[str, Any]:
+class MoviesSkill(BaseSkill):
+    """Return movie details and showtime summaries."""
+
+    manifest: dict[str, Any] = {}
+
+    async def execute(
+        self,
+        action: str,
+        ctx: dict[str, Any],
+        emit_progress: Callable[[str], Awaitable[None]],
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """Execute the requested movie action."""
+        del kwargs
+        self.validate_action(action)
+        request_text = str(ctx.get("request_text", "")).strip()
+
+        async with httpx.AsyncClient(timeout=12.0) as client:
+            if action == "get_showtimes":
+                await emit_progress("Searching for local showtimes...")
+                return await _showtimes_result(client, request_text, ctx)
+            if action == "get_movie_details":
+                await emit_progress("Fetching movie details...")
+                return await _details_result(client, request_text)
+        
+        raise ValueError(f"Unhandled action: {action}")
+
+
+async def _showtimes_result(client: httpx.AsyncClient, request_text: str, ctx: dict[str, Any]) -> dict[str, Any]:
     parsed = _parse_showtime_request(request_text, ctx)
+    # Note: parsed_search_results is currently a sync wrapper around a search provider.
+    # In a full async migration, this would also be awaited via client.
     search_results = _search_showtime_results(parsed)
+    
     if not search_results:
         return _error_result(
             "get_showtimes",
@@ -73,25 +90,42 @@ def _showtimes_result(request_text: str, ctx: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _details_result(request_text: str) -> dict[str, Any]:
+async def _details_result(client: httpx.AsyncClient, request_text: str) -> dict[str, Any]:
     title = _movie_title_from_request(request_text)
     if not title:
         return _error_result("get_movie_details", "Tell me which movie you want details for.")
-    results = parsed_search_results(f"{title} runtime rating post credit scene", max_results=4)
-    if not results:
-        return _error_result("get_movie_details", f"I couldn't find movie details for {title}.")
-    combined = " ".join(f"{item.get('title', '')} {item.get('snippet', '')}".strip() for item in results)
-    runtime = _match_runtime(combined)
-    rating = _match_rating(combined)
-    post_credit = _match_post_credit(combined)
+
+    # Try Wikipedia Infobox first for deterministic metadata
+    infobox = await _fetch_wikipedia_metadata(client, title)
+    
+    runtime = infobox.get("Running time", "") or infobox.get("Runtime", "")
+    rating = _clean_rating(infobox.get("Rating", ""))
+    
+    # Fallback to search snippets if Wikipedia was sparse
+    if not runtime or not rating:
+        results = parsed_search_results(f"{title} movie runtime rating post credit scene", max_results=4)
+        combined = " ".join(f"{item.get('title', '')} {item.get('snippet', '')}".strip() for item in results)
+        if not runtime:
+            runtime = _match_runtime(combined)
+        if not rating:
+            rating = _match_rating(combined)
+        post_credit = _match_post_credit(combined)
+    else:
+        # Still search for post-credits as it's rarely in the primary infobox
+        results = parsed_search_results(f"{title} post credit scene", max_results=2)
+        combined = " ".join(f"{item.get('title', '')} {item.get('snippet', '')}".strip() for item in results)
+        post_credit = _match_post_credit(combined)
+
     detail_parts = [part for part in [runtime, rating] if part]
     if post_credit:
         detail_parts.append(post_credit)
+        
     summary = f"I found {title}"
     if detail_parts:
         summary += " with " + ", ".join(detail_parts) + "."
     else:
-        summary += ", but the top search results were light on specifics."
+        summary += ", but the available sources were light on specifics."
+
     return {
         "ok": True,
         "skill": "movies",
@@ -101,13 +135,68 @@ def _details_result(request_text: str) -> dict[str, Any]:
             "runtime": runtime,
             "rating": rating,
             "post_credit": post_credit,
-            "results": results,
+            "infobox_source": bool(infobox),
             "summary": summary,
         },
-        "meta": {"source": "web_search"},
+        "meta": {"source": "wikipedia + web_search" if infobox else "web_search"},
         "presentation": {"type": "movie_details"},
         "errors": [],
     }
+
+
+async def _fetch_wikipedia_metadata(client: httpx.AsyncClient, title: str) -> dict[str, str]:
+    """Search Wikipedia and scrape the infobox for movie details."""
+    search_url = "https://en.wikipedia.org/w/api.php"
+    params = {"action": "query", "list": "search", "srsearch": f"{title} (film)", "format": "json", "srlimit": 1}
+    try:
+        search_response = await client.get(search_url, params=params)
+        results = search_response.json().get("query", {}).get("search", [])
+        if not results:
+            return {}
+            
+        real_title = results[0]["title"]
+        summary_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{real_title.replace(' ', '_')}"
+        summary_response = await client.get(summary_url)
+        payload = summary_response.json()
+        
+        page_url = str(payload.get("content_urls", {}).get("desktop", {}).get("page", "")).strip()
+        if not page_url:
+            return {}
+            
+        page_response = await client.get(page_url)
+        if page_response.status_code != 200:
+            return {}
+            
+        return _scrape_infobox(page_response.text)
+    except Exception:
+        return {}
+
+
+def _scrape_infobox(html_content: str) -> dict[str, str]:
+    """Parse the Wikipedia infobox into a clean dictionary."""
+    soup = BeautifulSoup(html_content, "html.parser")
+    infobox = soup.find("table", {"class": "infobox"})
+    if not infobox:
+        return {}
+
+    parsed: dict[str, str] = {}
+    for row in infobox.find_all("tr"):
+        label = row.find("th", {"class": "infobox-label"})
+        value = row.find("td", {"class": "infobox-data"})
+        if not label or not value:
+            continue
+        key = label.get_text(strip=True)
+        cleaned_value = re.sub(r"\[.*?\]", "", value.get_text(separator=", ", strip=True)).strip(", ")
+        if key and cleaned_value:
+            parsed[key] = cleaned_value
+    return parsed
+
+
+def _clean_rating(value: str) -> str:
+    if not value:
+        return ""
+    match = re.search(r"\b(G|PG|PG-13|R|NC-17)\b", value, flags=re.IGNORECASE)
+    return f"rated {match.group(1).upper()}" if match else ""
 
 
 def _movie_title_from_request(request_text: str) -> str:
@@ -156,7 +245,6 @@ def _error_result(action: str, detail: str) -> dict[str, Any]:
 
 
 def _parse_showtime_request(request_text: str, ctx: dict[str, Any]) -> ShowtimeRequest:
-    """Extract location, date, time window, and theater hints from a request."""
     cleaned = " ".join(request_text.strip().split())
     lowered = cleaned.lower()
     date_label = _extract_date_label(lowered)
@@ -179,7 +267,6 @@ def _parse_showtime_request(request_text: str, ctx: dict[str, Any]) -> ShowtimeR
 
 
 def _extract_movie_title_and_location(cleaned: str, lowered: str) -> tuple[str, str]:
-    """Return a likely movie title and location from a showtimes request."""
     patterns = (
         r"(?i)\bshowtimes?\s+for\s+(?P<title>.+?)\s+in\s+(?P<location>.+?)(?:\s+(?:today|tonight|tomorrow|this weekend|after)\b|$)",
         r"(?i)\bmovies?\s+for\s+(?P<title>.+?)\s+in\s+(?P<location>.+?)(?:\s+(?:today|tonight|tomorrow|this weekend|after)\b|$)",
@@ -197,7 +284,6 @@ def _extract_movie_title_and_location(cleaned: str, lowered: str) -> tuple[str, 
 
 
 def _extract_date_label(lowered: str) -> str:
-    """Return the requested date window."""
     for token in ("tomorrow", "tonight", "today", "this weekend"):
         if token in lowered:
             return token
@@ -205,7 +291,6 @@ def _extract_date_label(lowered: str) -> str:
 
 
 def _extract_time_after_label(lowered: str) -> str:
-    """Return an 'after X' time hint when present."""
     match = re.search(r"\bafter\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b", lowered)
     if not match:
         return ""
@@ -214,7 +299,6 @@ def _extract_time_after_label(lowered: str) -> str:
 
 
 def _extract_location_label(cleaned: str, lowered: str) -> str:
-    """Return a likely city/location phrase from a showtimes request."""
     patterns = (
         r"\bfor (?P<location>.+?)(?:\s+(?:today|tonight|tomorrow|this weekend|after)\b|$)",
         r"\bin (?P<location>.+?)(?:\s+(?:today|tonight|tomorrow|this weekend|after)\b|$)",
@@ -232,7 +316,6 @@ def _extract_location_label(cleaned: str, lowered: str) -> str:
 
 
 def _extract_theater_name(cleaned: str) -> str:
-    """Return a known theater-brand phrase when present."""
     match = re.search(
         r"\b(?P<theater>(?:AMC|Regal|Cinemark|Showcase|Bow Tie|Cinepolis|Alamo Drafthouse|Marcus)[^,.;]*)",
         cleaned,
@@ -242,7 +325,6 @@ def _extract_theater_name(cleaned: str) -> str:
 
 
 def _search_showtime_results(parsed: ShowtimeRequest) -> list[dict[str, str]]:
-    """Search for showtimes and keep only likely theater/showtime results."""
     queries = _candidate_showtime_queries(parsed)
     seen_keys: set[tuple[str, str]] = set()
     matched: list[dict[str, str]] = []
@@ -263,7 +345,6 @@ def _search_showtime_results(parsed: ShowtimeRequest) -> list[dict[str, str]]:
 
 
 def _candidate_showtime_queries(parsed: ShowtimeRequest) -> list[str]:
-    """Return stronger showtime-specific search query variants."""
     target = _target_label(parsed)
     movie_target = f"{parsed.movie_title} {target}".strip()
     queries = [
@@ -279,7 +360,6 @@ def _candidate_showtime_queries(parsed: ShowtimeRequest) -> list[str]:
 
 
 def _looks_like_showtime_result(title: str, snippet: str, parsed: ShowtimeRequest) -> bool:
-    """Return whether a search result looks like a real showtimes result."""
     haystack = f"{title} {snippet}".lower()
     if _looks_like_article(haystack):
         return False
@@ -293,29 +373,24 @@ def _looks_like_showtime_result(title: str, snippet: str, parsed: ShowtimeReques
 
 
 def _looks_like_article(haystack: str) -> bool:
-    """Return whether the result looks like commentary/news instead of listings."""
     return any(token in haystack for token in _ARTICLE_SIGNALS)
 
 
 def _contains_time(haystack: str) -> bool:
-    """Return whether the text contains a likely movie time."""
     return bool(re.search(r"\b\d{1,2}:\d{2}\s*(?:am|pm)?\b|\b\d{1,2}\s*(?:am|pm)\b", haystack))
 
 
 def _contains_theater(haystack: str) -> bool:
-    """Return whether the text contains a likely theater signal."""
     return any(token in haystack for token in _THEATER_SIGNALS)
 
 
 def _location_matches(haystack: str, location: str) -> bool:
-    """Return whether a result matches the requested location closely enough."""
     parts = [part.strip().lower() for part in re.split(r"[,/]", location) if part.strip()]
     words = [word for word in re.findall(r"[a-z0-9]+", location.lower()) if word not in _LOCATION_STOP_WORDS]
     return any(part in haystack for part in parts) or any(word in haystack for word in words)
 
 
 def _apply_time_filter(results: list[dict[str, str]], time_after_label: str) -> list[dict[str, str]]:
-    """Filter results by the requested lower time bound when possible."""
     if not time_after_label:
         return results
     requested_minutes = _time_label_to_minutes(time_after_label)
@@ -329,7 +404,6 @@ def _apply_time_filter(results: list[dict[str, str]], time_after_label: str) -> 
 
 
 def _showtimes_summary(results: list[dict[str, str]], parsed: ShowtimeRequest) -> str:
-    """Return a concise natural-language summary of showtimes results."""
     target = _showtime_target_label(parsed)
     lines: list[str] = []
     requested_minutes = _time_label_to_minutes(parsed.time_after_label) if parsed.time_after_label else None
@@ -356,13 +430,11 @@ def _showtimes_summary(results: list[dict[str, str]], parsed: ShowtimeRequest) -
 
 
 def _target_label(parsed: ShowtimeRequest) -> str:
-    """Return the user-facing showtimes target label."""
     target = f"{parsed.theater_name} {parsed.location}".strip()
     return target or "nearby theaters"
 
 
 def _showtime_target_label(parsed: ShowtimeRequest) -> str:
-    """Return the user-facing target label including movie title when known."""
     target = _target_label(parsed)
     if parsed.movie_title:
         if target == "nearby theaters":
@@ -372,7 +444,6 @@ def _showtime_target_label(parsed: ShowtimeRequest) -> str:
 
 
 def _showtime_entry(result: dict[str, str]) -> dict[str, Any]:
-    """Return structured showtime entry facts for character rendering."""
     title = str(result.get("title", "")).strip()
     snippet = str(result.get("snippet", "")).strip()
     return {
@@ -384,17 +455,15 @@ def _showtime_entry(result: dict[str, str]) -> dict[str, Any]:
 
 
 def _result_text(result: dict[str, str]) -> str:
-    """Return combined title and snippet text."""
     return f"{result.get('title', '')} {result.get('snippet', '')}".strip()
 
 
 def _extract_display_times(text: str) -> list[str]:
-    """Return compact unique time strings from one result."""
     seen: set[str] = set()
     matches = re.findall(r"\b(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?|\d{1,2}\s*(?:AM|PM|am|pm))\b", text)
     display: list[str] = []
     for match in matches:
-        normalized = re.sub(r"\s+", "", match.upper())
+        normalized = re.sub(r"\s+", " ", match.upper())
         if normalized in seen:
             continue
         seen.add(normalized)
@@ -403,7 +472,6 @@ def _extract_display_times(text: str) -> list[str]:
 
 
 def _extract_times_as_minutes(text: str) -> list[int]:
-    """Return times from text converted to minutes after midnight."""
     values: list[int] = []
     for match in _extract_display_times(text):
         minutes = _time_label_to_minutes(match)
@@ -413,7 +481,6 @@ def _extract_times_as_minutes(text: str) -> list[int]:
 
 
 def _time_label_to_minutes(label: str) -> int | None:
-    """Convert a compact time label into minutes after midnight."""
     normalized = re.sub(r"\s+", "", label.strip().lower())
     match = re.fullmatch(r"(?P<hour>\d{1,2})(?::(?P<minute>\d{2}))?(?P<period>am|pm)?", normalized)
     if not match:
@@ -430,44 +497,8 @@ def _time_label_to_minutes(label: str) -> int | None:
     return hour * 60 + minute
 
 
-_SHOWTIME_SIGNALS = (
-    "showtimes",
-    "movie times",
-    "theaters",
-    "theatre",
-    "cinema",
-    "cinemark",
-    "regal",
-    "amc",
-    "fandango",
-)
-
-_THEATER_SIGNALS = (
-    "cinemark",
-    "regal",
-    "amc",
-    "showcase",
-    "bow tie",
-    "cinepolis",
-    "drafthouse",
-    "theater",
-    "theatre",
-    "cinema",
-)
-
-_ARTICLE_SIGNALS = (
-    "things we learned",
-    "explained",
-    "review",
-    "ending",
-    "trailer",
-    "interview",
-    "news",
-    "celebrity",
-    "swiftie",
-    "tayvis",
-    "backstage",
-)
-
+_SHOWTIME_SIGNALS = ("showtimes", "movie times", "theaters", "theatre", "cinema", "cinemark", "regal", "amc", "fandango")
+_THEATER_SIGNALS = ("cinemark", "regal", "amc", "showcase", "bow tie", "cinepolis", "drafthouse", "theater", "theatre", "cinema")
+_ARTICLE_SIGNALS = ("things we learned", "explained", "review", "ending", "trailer", "interview", "news", "celebrity", "swiftie", "tayvis", "backstage")
 _LOCATION_STOP_WORDS = {"movie", "showtimes", "theaters", "theatre", "cinema", "after"}
 _DATE_LABELS = {"today", "tonight", "tomorrow", "this weekend"}

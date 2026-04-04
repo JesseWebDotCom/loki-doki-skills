@@ -17,7 +17,9 @@
   },
   "shared_context_fields": [],
   "account_context_fields": [],
-  "runtime_dependencies": [],
+  "runtime_dependencies": [
+    { "package": "httpx", "version": ">=0.27.0" }
+  ],
   "skill_dependencies": {
     "required": [],
     "optional": []

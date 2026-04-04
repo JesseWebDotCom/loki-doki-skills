@@ -5,25 +5,6 @@
   "source_repo_url": "https://github.com/JesseWebDotCom/loki-doki",
   "skills": [
     {
-      "id": "family_calendar",
-      "title": "Family Calendar",
-      "description": "Store and read shared household events in a local family calendar.",
-      "version": "1.0.0",
-      "domain": "calendar",
-      "domains": [
-        "calendar"
-      ],
-      "platforms": [
-        "mac",
-        "pi_cpu",
-        "pi_hailo"
-      ],
-      "account_mode": "none",
-      "download_url": "skills/family_calendar/family_calendar.zip",
-      "logo_url": "skills/family_calendar/logo.svg",
-      "meta_url": "skills/family_calendar/meta.json"
-    },
-    {
       "id": "home_assistant",
       "title": "Home Assistant",
       "description": "Control and query Home Assistant devices.",
@@ -60,44 +41,6 @@
       "download_url": "skills/movies/movies.zip",
       "logo_url": "skills/movies/logo.svg",
       "meta_url": "skills/movies/meta.json"
-    },
-    {
-      "id": "reminders",
-      "title": "Reminders",
-      "description": "Store and read personal reminders locally for each signed-in user.",
-      "version": "1.0.0",
-      "domain": "reminders",
-      "domains": [
-        "reminders"
-      ],
-      "platforms": [
-        "mac",
-        "pi_cpu",
-        "pi_hailo"
-      ],
-      "account_mode": "none",
-      "download_url": "skills/reminders/reminders.zip",
-      "logo_url": "skills/reminders/logo.svg",
-      "meta_url": "skills/reminders/meta.json"
-    },
-    {
-      "id": "shopping_list",
-      "title": "Shopping List",
-      "description": "Manage a shared local household shopping list.",
-      "version": "1.0.0",
-      "domain": "shopping",
-      "domains": [
-        "shopping"
-      ],
-      "platforms": [
-        "mac",
-        "pi_cpu",
-        "pi_hailo"
-      ],
-      "account_mode": "none",
-      "download_url": "skills/shopping_list/shopping_list.zip",
-      "logo_url": "skills/shopping_list/logo.svg",
-      "meta_url": "skills/shopping_list/meta.json"
     },
     {
       "id": "tv_shows",

@@ -1,101 +1,163 @@
-"""Wikipedia lookup skill backed by public Wikipedia APIs."""
+"""Wikipedia lookup skill backed by public Wikipedia APIs and Infobox scraping."""
 
 from __future__ import annotations
 
 import html
-import json
 import re
-import urllib.parse
-import urllib.request
-from typing import Any
+from typing import Any, Awaitable, Callable
+
+import httpx
+from bs4 import BeautifulSoup
 
 from app.skills.base import BaseSkill
 from app.skills.local_runtime import title_case_phrase
 
-SEARCH_URL = "https://en.wikipedia.org/w/api.php"
-SUMMARY_URL = "https://en.wikipedia.org/api/rest_v1/page/summary"
-HEADERS = {"User-Agent": "LokiDoki/0.1 (wikipedia skill)"}
-
 
 class WikipediaSkill(BaseSkill):
-    """Return structured Wikipedia summaries."""
+    """Return rich Wikipedia summaries including infobox metadata."""
 
     manifest: dict[str, Any] = {}
 
-    async def execute(self, action: str, ctx: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
+    async def execute(
+        self,
+        action: str,
+        ctx: dict[str, Any],
+        emit_progress: Callable[[str], Awaitable[None]],
+        **kwargs: Any,
+    ) -> dict[str, Any]:
         """Execute the requested Wikipedia action."""
         del kwargs
         self.validate_action(action)
         if action != "lookup_article":
             raise ValueError(f"Unhandled action: {action}")
+
         request_text = str(ctx.get("request_text", "")).strip()
-        return _lookup_result(request_text)
+        query = _article_query(request_text)
+        if not query:
+            return _error_result("lookup_article", "Tell me what you want to look up on Wikipedia.")
+
+        await emit_progress(f"Searching Wikipedia for '{query}'...")
+        return await self._lookup_article_result(query, action)
+
+    async def _lookup_article_result(self, query: str, action: str) -> dict[str, Any]:
+        # Try original, then title case
+        attempts = [query, query.title()] if not any(c.isupper() for c in query) else [query]
+        headers = {"User-Agent": "LokiDoki/1.0 (info@lokidoki.app)"}
+        payload = None
+
+        async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=10.0) as client:
+            for attempt in attempts:
+                formatted_query = attempt.replace(" ", "_")
+                summary_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{formatted_query}"
+                try:
+                    response = await client.get(summary_url)
+                    if response.status_code == 200:
+                        payload = response.json()
+                        if payload.get("type") != "disambiguation":
+                            break
+                except httpx.RequestError:
+                    continue
+
+            if not payload or payload.get("type") == "disambiguation":
+                # Final attempt: use search API to find the real title
+                search_url = "https://en.wikipedia.org/w/api.php"
+                params = {"action": "query", "list": "search", "srsearch": query, "format": "json", "srlimit": 1}
+                try:
+                    search_response = await client.get(search_url, params=params)
+                    search_data = search_response.json()
+                    results = search_data.get("query", {}).get("search", [])
+                    if results:
+                        real_title = results[0]["title"]
+                        summary_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{real_title.replace(' ', '_')}"
+                        summary_response = await client.get(summary_url)
+                        if summary_response.status_code == 200:
+                            payload = summary_response.json()
+                except Exception:
+                    pass
+
+        if not payload or payload.get("type") == "disambiguation":
+            return _error_result(action, f"I couldn't find a specific Wikipedia article for '{query}'.")
+
+        async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=10.0) as client:
+            page_url = str(payload.get("content_urls", {}).get("desktop", {}).get("page", "")).strip()
+            infobox = await _fetch_infobox(client, page_url) if page_url else {}
+
+            extract = str(payload.get("extract") or "").strip()
+            description = str(payload.get("description") or "").strip()
+            display_title = str(payload.get("title") or query)
+            content_urls = dict(payload.get("content_urls") or {})
+            
+            reply = _summary_markdown(display_title, description, extract, content_urls)
+
+            return {
+                "ok": True,
+                "skill": "wikipedia",
+                "action": action,
+                "data": {
+                    "query": query,
+                    "title": display_title,
+                    "description": description,
+                    "extract": extract,
+                    "infobox": infobox,
+                    "thumbnail": _thumbnail_payload(payload),
+                    "content_urls": content_urls,
+                    "summary": reply,
+                },
+                "meta": {"source": "wikipedia"},
+                "presentation": {"type": "wikipedia_summary"},
+                "errors": [],
+            }
 
 
-def _lookup_result(request_text: str) -> dict[str, Any]:
-    query = _article_query(request_text)
-    if not query:
-        return _error_result("Tell me what you want to look up on Wikipedia.")
-    title = _search_title(query)
-    if not title:
-        return _error_result(f"I couldn't find a matching Wikipedia article for {query}.")
-    summary = _summary_payload(title)
-    if not summary:
-        return _error_result(f"I found {title}, but I couldn't retrieve the article summary.")
-    extract = str(summary.get("extract") or "").strip()
-    description = str(summary.get("description") or "").strip()
-    display_title = str(summary.get("title") or title)
-    content_urls = dict(summary.get("content_urls") or {})
-    reply = _summary_text(display_title, description, extract, content_urls)
-    return {
-        "ok": True,
-        "skill": "wikipedia",
-        "action": "lookup_article",
-        "data": {
-            "query": query,
-            "title": display_title,
-            "description": description,
-            "extract": extract,
-            "content_urls": dict(summary.get("content_urls") or {}),
-            "summary": reply,
-        },
-        "meta": {"source": "wikipedia"},
-        "presentation": {"type": "wikipedia_summary"},
-        "errors": [],
-    }
-
-
-def _search_title(query: str) -> str:
-    params = urllib.parse.urlencode(
-        {
-            "action": "query",
-            "list": "search",
-            "srsearch": query,
-            "format": "json",
-            "utf8": "1",
-            "srlimit": "1",
-        }
-    )
-    payload = _json_request(f"{SEARCH_URL}?{params}")
-    search = list(payload.get("query", {}).get("search", [])) if isinstance(payload, dict) else []
-    if not search:
-        return ""
-    return str(search[0].get("title") or "").strip()
-
-
-def _summary_payload(title: str) -> dict[str, Any]:
-    encoded_title = urllib.parse.quote(title.replace(" ", "_"))
-    payload = _json_request(f"{SUMMARY_URL}/{encoded_title}")
-    return payload if isinstance(payload, dict) else {}
-
-
-def _json_request(url: str) -> dict[str, Any] | list[Any]:
-    request = urllib.request.Request(url, headers=HEADERS)
+async def _fetch_infobox(client: httpx.AsyncClient, page_url: str) -> dict[str, str]:
+    """Return a cleaned infobox payload when the page has one."""
     try:
-        with urllib.request.urlopen(request, timeout=15) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except Exception:
+        response = await client.get(page_url)
+    except httpx.RequestError:
         return {}
+    if response.status_code != 200:
+        return {}
+    return _scrape_infobox(response.text)
+
+
+def _scrape_infobox(html_content: str) -> dict[str, str]:
+    """Parse the right-column Wikipedia infobox into a clean dictionary."""
+    soup = BeautifulSoup(html_content, "html.parser")
+    infobox = soup.find("table", {"class": "infobox"})
+    if not infobox:
+        return {}
+
+    for hidden in infobox.find_all(["sup", "span", "div", "style"]):
+        classes = hidden.get("class", [])
+        if any(item in ["reference", "noprint", "metadata"] for item in classes):
+            hidden.decompose()
+            continue
+        if hidden.has_attr("style") and "display:none" in hidden.get("style", "").replace(" ", ""):
+            hidden.decompose()
+
+    for line_break in infobox.find_all("br"):
+        line_break.replace_with(", ")
+    for list_item in infobox.find_all("li"):
+        list_item.insert_after(", ")
+        list_item.unwrap()
+
+    parsed: dict[str, str] = {}
+    for row in infobox.find_all("tr"):
+        label = row.find("th", {"class": "infobox-label"})
+        value = row.find("td", {"class": "infobox-data"})
+        if not label or not value:
+            continue
+        key = re.sub(r"\[.*?\]", "", label.get_text(separator=" ", strip=True)).strip()
+        cleaned_value = re.sub(r"\[.*?\]", "", value.get_text(separator=", ", strip=True)).strip(", ")
+        cleaned_value = re.sub(r",\s*,", ",", cleaned_value).strip(", ")
+        if key and cleaned_value:
+            parsed[key] = cleaned_value
+    return parsed
+
+
+def _thumbnail_payload(payload: dict[str, Any]) -> dict[str, str]:
+    source = str(payload.get("thumbnail", {}).get("source", "")).strip()
+    return {"url": source} if source else {}
 
 
 def _article_query(request_text: str) -> str:
@@ -136,8 +198,8 @@ def _apply_media_hint(query: str, lowered_request: str) -> str:
     return query
 
 
-def _summary_text(title: str, description: str, extract: str, content_urls: dict[str, Any] | None = None) -> str:
-    clean_extract = _plain_text(extract)
+def _summary_markdown(title: str, description: str, extract: str, content_urls: dict[str, Any] | None = None) -> str:
+    clean_extract = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html.unescape(extract))).strip()
     url = ""
     if content_urls and "desktop" in content_urls:
         url = content_urls["desktop"].get("page", "")
@@ -150,15 +212,11 @@ def _summary_text(title: str, description: str, extract: str, content_urls: dict
     return f"{header}\n\n{clean_extract}{source_link}".strip()
 
 
-def _plain_text(value: str) -> str:
-    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html.unescape(value))).strip()
-
-
-def _error_result(detail: str) -> dict[str, Any]:
+def _error_result(action: str, detail: str) -> dict[str, Any]:
     return {
         "ok": False,
         "skill": "wikipedia",
-        "action": "lookup_article",
+        "action": action,
         "data": {},
         "meta": {"source": "wikipedia"},
         "presentation": {"type": "wikipedia_summary"},

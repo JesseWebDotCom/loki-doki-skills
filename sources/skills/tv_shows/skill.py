@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import html
-import json
 import re
 import urllib.parse
-import urllib.request
-from typing import Any
+from typing import Any, Awaitable, Callable
+
+import httpx
 
 from app.skills.base import BaseSkill
 from app.skills.local_runtime import title_case_phrase
@@ -21,33 +21,47 @@ class TvShowsSkill(BaseSkill):
 
     manifest: dict[str, Any] = {}
 
-    async def execute(self, action: str, ctx: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
+    async def execute(
+        self,
+        action: str,
+        ctx: dict[str, Any],
+        emit_progress: Callable[[str], Awaitable[None]],
+        **kwargs: Any,
+    ) -> dict[str, Any]:
         """Execute the requested TV show action."""
         del kwargs
         self.validate_action(action)
         request_text = str(ctx.get("request_text", "")).strip()
-        if action == "get_show_details":
-            return _show_details_result(request_text)
-        if action == "get_show_cast":
-            return _show_cast_result(request_text)
-        if action == "get_person_details":
-            return _person_details_result(request_text)
+
+        async with httpx.AsyncClient(headers=HEADERS, timeout=10.0) as client:
+            if action == "get_show_details":
+                return await _show_details_result(client, request_text)
+            if action == "get_show_cast":
+                return await _show_cast_result(client, request_text)
+            if action == "get_person_details":
+                return await _person_details_result(client, request_text)
+        
         raise ValueError(f"Unhandled action: {action}")
 
 
-def _show_details_result(request_text: str) -> dict[str, Any]:
+async def _show_details_result(client: httpx.AsyncClient, request_text: str) -> dict[str, Any]:
     show_name = _show_name_from_request(request_text)
     if not show_name:
         return _error_result("get_show_details", "Tell me which TV show or series you want.")
+
     # If the user asks about a finale or ending, try to answer directly
     finale_keywords = ["finale", "ending", "last episode", "final episode", "series finale", "conclusion"]
     is_finale_query = any(word in request_text.lower() for word in finale_keywords)
-    show = _tvmaze_json(f"/singlesearch/shows?q={urllib.parse.quote(show_name)}&embed=cast")
+
+    show = await _tvmaze_json(client, f"/singlesearch/shows?q={urllib.parse.quote(show_name)}&embed=cast")
+    
     # Guardrail: Ensure the returned show name matches the query (case-insensitive, substring match)
-    returned_name = str(show.get("name", "")).lower() if show else ""
-    if not show or (show_name.lower() not in returned_name and returned_name not in show_name.lower()):
+    returned_name = str(show.get("name", "")).lower() if isinstance(show, dict) else ""
+    if not show or not isinstance(show, dict) or (show_name.lower() not in returned_name and returned_name not in show_name.lower()):
         return _error_result("get_show_details", f"I couldn't find a TV show named {show_name}.")
+
     summary = _show_summary(show)
+    
     # If finale query, try to answer with finale info
     if is_finale_query:
         ended = show.get("ended")
@@ -72,6 +86,7 @@ def _show_details_result(request_text: str) -> dict[str, Any]:
             "presentation": {"type": "tv_show_details"},
             "errors": [],
         }
+
     return {
         "ok": True,
         "skill": "tv_shows",
@@ -91,14 +106,17 @@ def _show_details_result(request_text: str) -> dict[str, Any]:
     }
 
 
-def _show_cast_result(request_text: str) -> dict[str, Any]:
+async def _show_cast_result(client: httpx.AsyncClient, request_text: str) -> dict[str, Any]:
     show_name = _show_name_from_request(request_text)
     if not show_name:
         return _error_result("get_show_cast", "Tell me which TV show cast you want.")
-    show = _tvmaze_json(f"/singlesearch/shows?q={urllib.parse.quote(show_name)}&embed=cast")
-    cast_items = list(show.get("_embedded", {}).get("cast", [])) if show else []
-    if not show or not cast_items:
+
+    show = await _tvmaze_json(client, f"/singlesearch/shows?q={urllib.parse.quote(show_name)}&embed=cast")
+    cast_items = list(show.get("_embedded", {}).get("cast", [])) if isinstance(show, dict) else []
+    
+    if not show or not isinstance(show, dict) or not cast_items:
         return _error_result("get_show_cast", f"I couldn't find cast details for {show_name}.")
+
     cast = [_cast_entry(item) for item in cast_items[:8]]
     summary = _cast_summary(str(show.get("name") or show_name), cast)
     return {
@@ -116,16 +134,19 @@ def _show_cast_result(request_text: str) -> dict[str, Any]:
     }
 
 
-def _person_details_result(request_text: str) -> dict[str, Any]:
+async def _person_details_result(client: httpx.AsyncClient, request_text: str) -> dict[str, Any]:
     person_name = _person_name_from_request(request_text)
     if not person_name:
         return _error_result("get_person_details", "Tell me which actor or actress you want.")
-    matches = _tvmaze_json(f"/search/people?q={urllib.parse.quote(person_name)}")
+
+    matches = await _tvmaze_json(client, f"/search/people?q={urllib.parse.quote(person_name)}")
     if not isinstance(matches, list) or not matches:
         return _error_result("get_person_details", f"I couldn't find a TV-focused performer named {person_name}.")
+
     person = dict(matches[0].get("person") or {})
-    details = _tvmaze_json(f"/people/{person.get('id')}?embed=castcredits") if person.get("id") else {}
+    details = await _tvmaze_json(client, f"/people/{person.get('id')}?embed=castcredits") if person.get("id") else {}
     credits = list(details.get("_embedded", {}).get("castcredits", [])) if isinstance(details, dict) else []
+    
     shows = _credit_show_names(credits)
     summary = _person_summary(person, shows)
     return {
@@ -145,11 +166,12 @@ def _person_details_result(request_text: str) -> dict[str, Any]:
     }
 
 
-def _tvmaze_json(path: str) -> dict[str, Any] | list[Any]:
-    request = urllib.request.Request(f"{API_BASE}{path}", headers=HEADERS)
+async def _tvmaze_json(client: httpx.AsyncClient, path: str) -> dict[str, Any] | list[Any]:
     try:
-        with urllib.request.urlopen(request, timeout=15) as response:
-            return json.loads(response.read().decode("utf-8"))
+        response = await client.get(f"{API_BASE}{path}")
+        if response.status_code == 200:
+            return response.json()
+        return {}
     except Exception:
         return {}
 

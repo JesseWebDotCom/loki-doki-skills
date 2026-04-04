@@ -36,7 +36,10 @@
     }
   ],
   "account_context_fields": [],
-  "runtime_dependencies": [],
+  "runtime_dependencies": [
+    { "package": "httpx", "version": ">=0.27.0" },
+    { "package": "beautifulsoup4", "version": ">=4.12.0" }
+  ],
   "skill_dependencies": {
     "required": [
       {

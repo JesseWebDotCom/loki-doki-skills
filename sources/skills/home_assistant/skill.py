@@ -1,5 +1,6 @@
-    import httpx
-from core.base_skill import BaseSkill
+import httpx
+from typing import Any, Awaitable, Callable
+from app.skills.base import BaseSkill
 
 class HomeAssistantSkill(BaseSkill):
     manifest = {
@@ -9,7 +10,13 @@ class HomeAssistantSkill(BaseSkill):
         "actions": {"turn_on": {}, "turn_off": {}, "get_state": {}},
     }
 
-    async def execute(self, action: str, ctx: dict, **kwargs) -> dict:
+    async def execute(
+        self,
+        action: str,
+        ctx: dict[str, Any],
+        emit_progress: Callable[[str], Awaitable[None]],
+        **kwargs: Any,
+    ) -> dict[str, Any]:
         self.validate_action(action)
         if action == "turn_on": return await self.turn_on(ctx, **kwargs)
         if action == "turn_off": return await self.turn_off(ctx, **kwargs)

@@ -17,7 +17,9 @@
   },
   "shared_context_fields": [],
   "account_context_fields": [],
-  "runtime_dependencies": [],
+  "runtime_dependencies": [
+    "httpx"
+  ],
   "skill_dependencies": {
     "required": [],
     "optional": []

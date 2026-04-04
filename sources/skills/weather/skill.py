@@ -1,5 +1,5 @@
-    import httpx
-from core.base_skill import BaseSkill
+import httpx
+from app.skills.base import BaseSkill
 
 class WeatherSkill(BaseSkill):
     manifest = {
@@ -9,7 +9,13 @@ class WeatherSkill(BaseSkill):
         "actions": {"get_current": {}, "get_forecast": {}},
     }
 
-    async def execute(self, action: str, ctx: dict, **kwargs) -> dict:
+    async def execute(
+        self,
+        action: str,
+        ctx: dict[str, Any],
+        emit_progress: Callable[[str], Awaitable[None]],
+        **kwargs: Any,
+    ) -> dict[str, Any]:
         self.validate_action(action)
         if action == "get_current":
             return await self.get_current(ctx, **kwargs)
